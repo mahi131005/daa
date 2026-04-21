@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Snippets</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0b0d14;
+    --surface:   #13151f;
+    --surface2:  #1a1d2e;
+    --border:    #252840;
+    --border2:   #363a5e;
+    --text:      #dde2f0;
+    --muted:     #5a6080;
+    --accent:    #7c8fff;
+    --accent-dim:#2a2f5e;
+    --green:     #3ddc97;
+    --green-dim: #0d2e20;
+    --mono:      'JetBrains Mono', monospace;
+    --sans:      'Syne', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--surface2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--surface2) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 740px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 3rem; }
+
+  header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  header h1 span { color: var(--accent); }
+
+  header p {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: fadeUp 0.4s forwards;
+  }
+  .card:hover { border-color: var(--border2); }
+
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.12s; }
+  .card:nth-child(3) { animation-delay: 0.19s; }
+  .card:nth-child(4) { animation-delay: 0.26s; }
+  .card:nth-child(5) { animation-delay: 0.33s; }
+
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    gap: 1rem;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .question {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .arrow {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.25s, background 0.2s, color 0.2s;
+    color: var(--muted);
+  }
+  .arrow svg { width: 13px; height: 13px; }
+  .card.open .arrow { transform: rotate(180deg); background: var(--accent-dim); color: var(--accent); }
+
+  .card-body { display: none; border-top: 1px solid var(--border); }
+  .card.open .card-body { display: block; }
+
+  .code-wrapper { position: relative; padding: 1rem; }
+
+  .code-block {
+    background: #080a10;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.1rem 5rem 1.1rem 1rem;
+    overflow-x: auto;
+  }
+
+  /* ── paste your code inside this p tag ── */
+  .code-block p.code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    white-space: pre;
+    color: #a9b8d8;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--accent);
+    border-radius: 7px;
+    padding: 4px 12px 4px 8px;
+    font-size: 0.72rem;
+    font-family: var(--mono);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .copy-btn:hover { background: var(--accent-dim); border-color: var(--accent); }
+  .copy-btn svg   { width: 12px; height: 12px; flex-shrink: 0; }
+  .copy-btn.copied { color: var(--green); border-color: #1a4a32; background: var(--green-dim); }
+
+  .code-block::-webkit-scrollbar        { height: 4px; }
+  .code-block::-webkit-scrollbar-track  { background: transparent; }
+  .code-block::-webkit-scrollbar-thumb  { background: var(--border2); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Code <span>Snippets</span></h1>
+  </header>
+
+  <!-- ================================================================
+       HOW TO ADD OR EDIT A CARD
+       ─────────────────────────
+       1. Copy the entire .card block below.
+       2. Edit the text inside <span class="question">…</span>.
+       3. Paste your code inside <p class="code">…</p>.
+          Indentation & line breaks are preserved automatically.
+       4. Save and open in a browser — done!
+       ================================================================ -->
+
+  <!-- CARD 1 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="question">Implement a solution for a Constraint Satisfaction Problem using Branch and Bound and 
+Backtracking for n-queens problem or a graph coloring problem. </span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#8-Queens problem solved using backtracking
+
+def is_safe(board, row, col):
+    for i in range(row):
+        if board[i][col]=="Q":
+            return False
+        
+    for i,j in zip(range(row-1,-1,-1), range(col-1,-1,-1)):
+        if board[i][j]=="Q":
+            return False
+    
+    for i,j in zip(range(row-1,-1,-1), range(col+1,8)):
+        if board[i][j]=="Q":
+            return False
+        
+    return True
+
+def solve(board, row):
+    n=len(board)
+    if row==n:
+        return True
+    
+    if row==0:
+        return solve(board, row+1)
+    
+    for col in range(n):
+        if is_safe(board, row, col):
+            board[row][col]="Q"
+            
+            if solve(board, row+1):
+                return True
+            
+            board[row][col]="."
+            
+    return False
+
+def print_board(board):
+    for row in board:
+        print(" ".join(row))
+    print()
+    
+board = [["." for _ in range(8)] for _ in range(8)]
+
+board[0][0]="Q"
+
+if solve(board,0):
+    print("8-Queens Solution: ")
+    print_board(board)
+else:
+    print("No Solution exists")</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 2 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="question">Implement A star Algorithm for any game search problem. </span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#implement A* search algorithm for any game - 8-puzzle problem
+
+import heapq
+
+# Goal state of 8-puzzle
+goal = (1,2,3,4,5,6,7,8,0)
+
+# Heuristic function: count of misplaced tiles
+def h(state):
+    return sum(1 for i in range(9) if state[i] != 0 and state[i] != goal[i])
+
+# Generate all possible moves from current state
+def get_moves(state):
+    i = state.index(0)          # Find position of blank (0)
+    x, y = i//3, i%3            # Convert index to 2D position
+    moves = []
+
+    # Possible directions: down, up, right, left
+    for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+        nx, ny = x+dx, y+dy
+
+        # Check if move is within grid
+        if 0 <= nx < 3 and 0 <= ny < 3:
+            j = nx*3 + ny       # Convert back to 1D index
+            new = list(state)
+            new[i], new[j] = new[j], new[i]   # Swap blank with neighbor
+            moves.append(tuple(new))
+
+    return moves
+
+# A* Algorithm
+def astar(start):
+    pq = [(h(start), 0, start, [])]   # (f = g+h, g, state, path)
+    visited = set()
+
+    while pq:
+        f, g, state, path = heapq.heappop(pq)
+
+        # If goal reached, return full path
+        if state == goal:
+            return path + [state]
+
+        # Skip already visited states
+        if state in visited:
+            continue
+        visited.add(state)
+
+        # Explore neighbors
+        for nxt in get_moves(state):
+            if nxt not in visited:
+                heapq.heappush(pq, (g+1+h(nxt), g+1, nxt, path+[state]))
+
+# Function to print state in 3x3 grid format
+def print_grid(state):
+    for i in range(0, 9, 3):
+        print(state[i], state[i+1], state[i+2])
+    print("-----")
+
+# Example start state
+start = (1,2,3,4,0,6,7,5,8)
+
+# Solve
+solution = astar(start)
+
+# Print solution in grid format
+for step in solution:
+    print_grid(step)</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 3 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="question">Linear Regression</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#Linear Regression
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.DataFrame({"X":[10,9,2,15,10,16,11,16], "Y":[15,80,10,50,45,98,38,93]})
+
+df["X^2"]=df["X"]**2
+df["XY"]=df["X"]*df["Y"]
+
+n=len(df)
+
+sum_x=df["X"].sum()
+sum_y=df["Y"].sum()
+sum_x2=df["X^2"].sum()
+sum_xy=df["XY"].sum()
+
+m=(n*sum_xy - sum_y*sum_x)/(n*sum_x2 - sum_x**2)
+b=(sum_y - m*sum_x)/n
+
+df["Y(Predicted)"] = m*df["X"]+b
+print(df)
+
+print("\nCalculations: ")
+print("∑X: ", sum_x)
+print("∑Y: ", sum_y)
+print("∑X^2: ", sum_x2)
+print("∑XY: ", sum_xy)
+
+print(f"\nBest Fit Line: Y = {m:.2f}X + {b:.2f}")
+
+plt.figure()
+plt.scatter(df["X"],df["Y"])
+plt.plot(df["X"],df["Y(Predicted)"])
+plt.xlabel("X (Hours)")
+plt.ylabel("Y (Risks)")
+plt.title("Linear Regression")
+plt.show()</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 4 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="question">Uber</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_squared_error
+
+# Load dataset
+df = pd.read_csv("uber.csv")
+
+print("\n========== ORIGINAL DATA ==========")
+print(df.head())
+
+# Basic cleaning
+df = df.dropna()
+df = df[df['fare_amount'] > 0]
+
+# -------- 1. Outlier Detection & Removal --------
+Q1 = df['fare_amount'].quantile(0.25)
+Q3 = df['fare_amount'].quantile(0.75)
+IQR = Q3 - Q1
+
+print("\n========== OUTLIER ANALYSIS ==========")
+print("Q1:", Q1, " Q3:", Q3, " IQR:", IQR)
+
+df = df[(df['fare_amount'] >= Q1 - 1.5*IQR) & (df['fare_amount'] <= Q3 + 1.5*IQR)]
+print("Data after removing outliers:", df.shape)
+
+# -------- Feature Engineering --------
+df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
+df['hour'] = df['pickup_datetime'].dt.hour
+
+X = df[['pickup_longitude','pickup_latitude','dropoff_longitude','dropoff_latitude','hour']]
+y = df['fare_amount']
+
+# -------- 2. Correlation --------
+print("\n========== CORRELATION WITH FARE ==========")
+corr_matrix = df.select_dtypes(include=[np.number]).corr()
+print(corr_matrix['fare_amount'].sort_values(ascending=False))
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+# -------- 3. Model Training --------
+lr = LinearRegression().fit(X_train, y_train)
+rf = RandomForestRegressor().fit(X_train, y_train)
+
+# Predictions
+y_pred_lr = lr.predict(X_test)
+y_pred_rf = rf.predict(X_test)
+
+# -------- 4. Evaluation --------
+def evaluate(name, y_true, y_pred):
+    r2 = r2_score(y_true, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    print(f"\n{name} Results:")
+    print("R2 Score :", round(r2, 4))
+    print("RMSE     :", round(rmse, 4))
+
+print("\n========== MODEL EVALUATION ==========")
+evaluate("Linear Regression", y_test, y_pred_lr)
+evaluate("Random Forest", y_test, y_pred_rf)</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 5 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="question">Email</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code"># Email Classification
+
+import pandas as pd 
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split 
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.svm import SVC 
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Load dataset
+df = pd.read_csv("emails.csv")
+
+# Features & target
+X = df.drop(columns=['Email No.', 'Prediction']) 
+y = df['Prediction']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# -------- KNN Model --------
+knn = KNeighborsClassifier(n_neighbors=5) 
+knn.fit(X_train, y_train) 
+y_pred_knn = knn.predict(X_test)
+
+# -------- SVM Model --------
+svm = SVC(kernel='linear') 
+svm.fit(X_train, y_train) 
+y_pred_svm = svm.predict(X_test) 
+
+# -------- Evaluation --------
+acc_knn = accuracy_score(y_test, y_pred_knn)
+acc_svm = accuracy_score(y_test, y_pred_svm)
+
+print("\n========== MODEL PERFORMANCE ==========")
+
+# KNN
+print("\n[KNN CLASSIFIER]")
+print("Accuracy : {:.4f}".format(acc_knn))
+print("\nClassification Report:\n", classification_report(y_test, y_pred_knn))
+
+plt.figure()
+plt.imshow(confusion_matrix(y_test, y_pred_knn))
+plt.title("KNN Confusion Matrix")
+plt.colorbar()
+plt.show()
+
+# SVM
+print("\n[SVM CLASSIFIER]")
+print("Accuracy : {:.4f}".format(acc_svm))
+print("\nClassification Report:\n", classification_report(y_test, y_pred_svm))
+
+# -------- Graph (Confusion Matrix Visualization) --------
+
+plt.figure()
+plt.imshow(confusion_matrix(y_test, y_pred_svm))
+plt.title("SVM Confusion Matrix")
+plt.colorbar()
+plt.show()
+
+# -------- Conclusion --------
+print("\n========== CONCLUSION ==========")
+if acc_svm > acc_knn:
+    print("SVM performs better than KNN based on higher accuracy.")
+elif acc_knn > acc_svm:
+    print("KNN performs better than SVM based on higher accuracy.")
+else:
+    print("Both KNN and SVM perform equally well.")</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- card 6 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Diabetes</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code"># Diabetes Prediction using KNN
+
+import pandas as pd 
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split 
+from sklearn.neighbors import KNeighborsClassifier 
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score 
+from sklearn.preprocessing import StandardScaler 
+import numpy as np
+
+# Load dataset
+df = pd.read_csv("diabetes.csv") 
+
+print("\n========== DATA PREVIEW ==========")
+print(df.head())
+
+# -------- Data Cleaning --------
+cols = ['Glucose','BloodPressure','SkinThickness','Insulin','BMI'] 
+for col in cols: 
+    df[col] = df[col].replace(0, np.nan) 
+    df[col].fillna(df[col].median(), inplace=True)
+
+# Features & target
+X = df.drop(columns=['Outcome']) 
+y = df['Outcome']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# -------- Scaling --------
+scaler = StandardScaler() 
+X_train = scaler.fit_transform(X_train) 
+X_test = scaler.transform(X_test)
+
+# -------- Model --------
+knn = KNeighborsClassifier(n_neighbors=8) 
+knn.fit(X_train, y_train) 
+y_pred = knn.predict(X_test) 
+
+# -------- Evaluation --------
+cm = confusion_matrix(y_test, y_pred) 
+accuracy = accuracy_score(y_test, y_pred) 
+precision = precision_score(y_test, y_pred) 
+recall = recall_score(y_test, y_pred) 
+
+print("\n[METRICS]")
+print("Accuracy  : {:.4f}".format(accuracy)) 
+print("Precision : {:.4f}".format(precision)) 
+print("Recall    : {:.4f}".format(recall))
+
+# -------- Visualization --------
+plt.figure()
+plt.imshow(cm)
+plt.title("Confusion Matrix (KNN - Diabetes)")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.colorbar()
+plt.show()
+
+# -------- Conclusion --------
+print("\n========== CONCLUSION ==========")
+print("The KNN model predicts diabetes with an accuracy of {:.2f}%.".format(accuracy*100))</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- card 7 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Sales Data</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code"># K-Means clustering/ hierarchical clustering on sales_data_sample.csv dataset
+
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from sklearn.cluster import KMeans 
+from sklearn.preprocessing import StandardScaler 
+from scipy.cluster.hierarchy import dendrogram, linkage 
+
+df = pd.read_csv("sales_data_sample.csv", encoding='latin1')
+
+# 3. Select numeric features 
+X = df[['SALES', 'QUANTITYORDERED', 'PRICEEACH']] 
+
+# 4. Scale data (important for clustering) 
+scaler = StandardScaler() 
+X_scaled = scaler.fit_transform(X) 
+
+# ------------------------------- 
+# 5. Elbow Method 
+# ------------------------------- 
+inertia = [] 
+for k in range(1, 11): 
+    km = KMeans(n_clusters=k, random_state=42, n_init=10) 
+    km.fit(X_scaled) 
+    inertia.append(km.inertia_) 
+
+plt.figure() 
+plt.plot(range(1, 11), inertia, marker='o') 
+plt.xlabel("Number of Clusters (K)") 
+plt.ylabel("Inertia") 
+plt.title("Elbow Method") 
+plt.show() 
+
+# ------------------------------- 
+# 6. Apply K-Means (choose K from elbow) 
+# ------------------------------- 
+k = 3   # change based on elbow graph 
+kmeans = KMeans(n_clusters=k, random_state=42, n_init=10) 
+df['Cluster'] = kmeans.fit_predict(X_scaled) 
+print(df[['SALES', 'QUANTITYORDERED', 'PRICEEACH', 'Cluster']].head()) 
+
+# ------------------------------- 
+# 7. Visualize Clusters 
+# ------------------------------- 
+plt.figure() 
+plt.scatter(df['SALES'], df['QUANTITYORDERED'], c=df['Cluster']) 
+plt.xlabel("Sales") 
+plt.ylabel("Quantity Ordered") 
+plt.title("K-Means Clusters") 
+plt.show() </p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- card 8 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Fibonacci</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#Fibonacci Sequence with Step Count
+
+def fibonacci_with_stepcount(n):
+    if n<=0:
+        return 0,1
+    elif n==1:
+        return 1,1
+    
+    a,b = 0,1
+    step_count = 2
+    
+    for i in range(2,n+1):
+        a,b = b, a+b
+        step_count += 1
+        
+    return b, step_count
+
+
+n = int(input("Enter the value of n for Fibonacci: "))
+fib_num, step_count = fibonacci_with_stepcount(n)
+print("The number in Fibonacci sequence at nth place is: ", fib_num)
+print("The step count for the program is: ", step_count)
+        </p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- card 9 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Job Sequencing</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#Job Sequencing with deadlines using the greedy method
+
+class Job:
+    def __init__(self, job_id, deadlines, profit):
+        self.job_id = job_id
+        self.deadlines = deadlines
+        self.profit = profit
+        
+def job_sequencing(jobs):
+       
+    jobs.sort(key=lambda x: x.profit, reverse = True)
+        
+    max_deadline = max(job.deadlines for job in jobs)
+        
+    slots = [-1]*max_deadline
+    job_order = []
+    total_profit = 0
+        
+    for job in jobs:
+        for j in range(min(job.deadlines - 1, max_deadline - 1), -1, -1):
+            if slots[j] == -1:
+                slots[j] = job.job_id
+                total_profit += job.profit
+                job_order.append(job.job_id)
+                break
+                    
+    return job_order, total_profit
+    
+if __name__ == "__main__":
+    jobs = [Job("J1",2,100),Job("J2",1,19),Job("J3",2,27),Job("J4",1,250),Job("J5",3,15)]
+    
+    job_sequence, total_profit = job_sequencing(jobs)
+    print("Job Scheduling Order: ", job_sequence)
+    print("Total Profit: ", total_profit)</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- card 10 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Fractional Knapsack</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#Fractional Knapsack using Greedy Algorithm
+
+class Items:
+    def __init__(self, value, weight):
+        self.value = value
+        self.weight = weight
+        self.ratio = value / weight
+        
+def fractional_knapsack(items,capacity):
+    
+    items.sort(key = lambda x: x.ratio, reverse = True)
+    
+    total_value = 0.0
+    
+    for item in items:
+        if capacity >= item.weight:
+            total_value += item.value
+            capacity -= item.weight
+        else:
+            total_value += item.ratio*capacity
+            break
+            
+    return total_value
+
+if __name__ == "__main__":
+    items = [Items(60,10),Items(100,20),Items(120,30)]
+    capacity = 50
+    
+    max_value = fractional_knapsack(items, capacity)
+    print("Maximum Value: ", max_value)</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+    <!-- card 11 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">0/1 Knapsack (DP)</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#0/1 Knapsack using dynamic programming
+
+def knapsack(weight, value, capacity):
+    
+    n = len(value)
+    dp = [[0]*(capacity+1) for _ in range(n+1)]
+    
+    for i in range(1, n+1):
+        for w in range(1, capacity+1):
+            if weight[i-1]<=w:
+                dp[i][w] = max(dp[i-1][w], value[i-1] + dp[i-1][w - weight[i-1]])
+            else:
+                dp[i][w]=dp[i-1][w]
+                
+    return dp[n][capacity]
+
+weights = [1,2,3]
+values = [6,10,12]
+capacity = 5
+
+max_value = knapsack(weights, values, capacity)
+print("Max Value of 0/1 Knapsack using DP: ", max_value)</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <!-- card 12 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">0/1 Knapsack (BB)</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">def knapsack_bb(weights, values, capacity):
+    n = len(values)
+    # Sort by value/weight ratio descending
+    idx = sorted(range(n), key=lambda i: values[i]/weights[i], reverse=True)
+    w = [weights[i] for i in idx]
+    v = [values[i] for i in idx]
+    max_profit = 0
+    
+    def bound(i, profit, weight):
+        """Calculate upper bound using fractional knapsack"""
+        while i < n and weight + w[i] <= capacity:
+            profit += v[i]
+            weight += w[i]
+            i += 1
+        # Add fraction of next item if possible
+        if i < n:
+            profit += (capacity - weight) * v[i] / w[i]
+        return profit
+    
+    def dfs(i, profit, weight):
+        nonlocal max_profit
+        # Prune if bound is not promising
+        if bound(i, profit, weight) <= max_profit:
+            return
+        # Update max profit
+        if profit > max_profit:
+            max_profit = profit
+        # Base case
+        if i >= n:
+            return
+        # Branch 1: Include item i
+        if weight + w[i] <= capacity:
+            dfs(i + 1, profit + v[i], weight + w[i])
+        # Branch 2: Exclude item i
+        dfs(i + 1, profit, weight)
+    
+    dfs(0, 0, 0)
+    return max_profit
+
+# Example
+values = [6, 10, 12]
+weights = [1, 2, 3]
+capacity = 5
+print("Maximum value:", knapsack_bb(weights, values, capacity))</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <!-- card 13 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Graph Coloring</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#Implement GraphColoring algorithm using backtracking
+
+def is_safe(graph, color, c, v):
+    for i in range(len(graph)):
+        if graph[v][i] == 1 and color[i] == c:
+            return False
+        
+    return True
+
+def graph_coloring_util(graph, m, color, v):
+    if v == len(graph):
+        return True
+    
+    for c in range(1, m+1):
+        if is_safe(graph, color, c, v):
+            color[v]=c
+            if graph_coloring_util(graph, m, color, v+1):
+                return True
+            color[v]=0
+            
+    return False
+
+def graph_coloring(graph, m):
+    color = [0]*len(graph)
+    
+    if not graph_coloring_util(graph, m, color, 0):
+        print("No Solution")
+        return False
+    
+    print("Solution exists")
+    for i in range(len(color)):
+        print(f'Vertex{i} ----> Color{color[i]}')
+    return True
+
+graph = [[0,1,1,1],
+        [1,0,1,0],
+        [1,1,0,1],
+        [1,0,1,0]]
+
+m = 3
+graph_coloring(graph, m)</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <!-- card 14 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Huffman</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">#huffman coding using Greedy Method
+
+import heapq
+from collections import Counter
+
+class Node:
+    def __init__(self, char=None, freq=0, left=None, right=None):
+        self.char, self.freq = char, freq
+        self.left, self.right = left, right
+
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+# Build tree
+def build_tree(text):
+    heap = [Node(c, f) for c, f in Counter(text).items()]
+    heapq.heapify(heap)
+
+    while len(heap) > 1:
+        a, b = heapq.heappop(heap), heapq.heappop(heap)
+        heapq.heappush(heap, Node(None, a.freq + b.freq, a, b))
+
+    return heap[0]
+
+# Generate codes
+def get_codes(node, code="", codes={}):
+    if node:
+        if node.char:
+            codes[node.char] = code
+        get_codes(node.left, code + "0", codes)
+        get_codes(node.right, code + "1", codes)
+    return codes
+
+# Encode & Decode
+def encode(text):
+    root = build_tree(text)
+    codes = get_codes(root, "", {})
+    return ''.join(codes[c] for c in text), codes, root
+
+def decode(encoded, root):
+    res, node = "", root
+    for bit in encoded:
+        node = node.left if bit == "0" else node.right
+        if node.char:
+            res += node.char
+            node = root
+    return res
+
+# Example
+text = "huffman coding is greedy"
+enc, codes, tree = encode(text)
+print("Codes:", codes)
+print("Encoded:", enc)
+print("Decoded:", decode(enc, tree))</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <!-- card 15 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Travelling Salesman Problem</span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">import heapq
+
+def tsp(cost):
+    n = len(cost)
+    pq = [(0, [0])]   # (current_cost, path)
+    min_cost = float('inf')
+    best_path = []
+
+    while pq:
+        curr_cost, path = heapq.heappop(pq)
+        curr_city = path[-1]
+
+        # If all cities visited, return to start
+        if len(path) == n:
+            total_cost = curr_cost + cost[curr_city][0]
+            if total_cost < min_cost:
+                min_cost = total_cost
+                best_path = path + [0]
+            continue
+
+        # Try next cities
+        for next_city in range(n):
+            if next_city not in path:
+                new_cost = curr_cost + cost[curr_city][next_city]
+
+                # Bounding (prune if already worse)
+                if new_cost < min_cost:
+                    heapq.heappush(pq, (new_cost, path + [next_city]))
+
+    return best_path, min_cost
+
+
+# Example
+cost_matrix = [
+    [float('inf'), 10, 15, 20],
+    [10, float('inf'), 35, 25],
+    [15, 35, float('inf'), 30],
+    [20, 25, 30, float('inf')]
+]
+
+path, cost = tsp(cost_matrix)
+print("Minimum Cost:", cost)
+print("Path:", path)</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Copy one of the blocks above to add more cards -->
+
+</div>
+
+<script>
+  const copySVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  const checkSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  /* toggle open/close */
+  document.querySelectorAll(".card-header").forEach(header => {
+    header.addEventListener("click", () => {
+      header.closest(".card").classList.toggle("open");
+    });
+  });
+
+  /* copy — reads text straight from the <p class="code"> tag */
+  document.querySelectorAll(".copy-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const code = btn.closest(".code-wrapper").querySelector("p.code");
+      navigator.clipboard.writeText(code.textContent).then(() => {
+        btn.innerHTML = checkSVG + " Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.innerHTML = copySVG + " Copy";
+          btn.classList.remove("copied");
+        }, 2000);
+      }).catch(() => { btn.textContent = "Failed"; });
+    });
+  });
+</script>
+</body>
+</html>
