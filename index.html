@@ -191,8 +191,7 @@
   <!-- CARD 1 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Implement a solution for a Constraint Satisfaction Problem using Branch and Bound and 
-Backtracking for n-queens problem or a graph coloring problem. </span>
+      <span class="question">Ansible</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -200,56 +199,63 @@ Backtracking for n-queens problem or a graph coloring problem. </span>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">#8-Queens problem solved using backtracking
+          <p class="code">sudo apt update
+sudo apt install ansible git -y
 
-def is_safe(board, row, col):
-    for i in range(row):
-        if board[i][col]=="Q":
-            return False
-        
-    for i,j in zip(range(row-1,-1,-1), range(col-1,-1,-1)):
-        if board[i][j]=="Q":
-            return False
-    
-    for i,j in zip(range(row-1,-1,-1), range(col+1,8)):
-        if board[i][j]=="Q":
-            return False
-        
-    return True
+mkdir ansible-web
+cd ansible-web
 
-def solve(board, row):
-    n=len(board)
-    if row==n:
-        return True
-    
-    if row==0:
-        return solve(board, row+1)
-    
-    for col in range(n):
-        if is_safe(board, row, col):
-            board[row][col]="Q"
-            
-            if solve(board, row+1):
-                return True
-            
-            board[row][col]="."
-            
-    return False
+vim inventory
+[web]
+localhost ansible_connection=local
 
-def print_board(board):
-    for row in board:
-        print(" ".join(row))
-    print()
-    
-board = [["." for _ in range(8)] for _ in range(8)]
+vim webserver.yml
+---
+- name: Simple Web Server Setup with Multiple Packages
+  hosts: web
+  become: yes
 
-board[0][0]="Q"
+  vars:
+    app_name: MyWebApp
+    page_owner: Admin
+    packages:
+      - apache2
+      - git
+      - curl
+      - vim
 
-if solve(board,0):
-    print("8-Queens Solution: ")
-    print_board(board)
-else:
-    print("No Solution exists")</p>
+  tasks:
+
+    - name: Install required packages
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+
+    - name: Create simple HTML page
+      copy:
+        dest: /var/www/html/index.html
+        content: |
+          <h1>Welcome to {{ app_name }}</h1>
+          <p>Owner: {{ page_owner }}</p>
+          <p>Server configured using Ansible</p>
+      notify: Restart Apache
+
+    - name: Ensure Apache is running
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+
+ansible-playbook -i inventory webserver.yml --ask-become-pass
+
+http://localhost:8080</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -262,7 +268,7 @@ else:
   <!-- CARD 2 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Implement A star Algorithm for any game search problem. </span>
+      <span class="question">Ansible - ad-hoc commands</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -270,73 +276,11 @@ else:
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">#implement A* search algorithm for any game - 8-puzzle problem
-
-import heapq
-
-# Goal state of 8-puzzle
-goal = (1,2,3,4,5,6,7,8,0)
-
-# Heuristic function: count of misplaced tiles
-def h(state):
-    return sum(1 for i in range(9) if state[i] != 0 and state[i] != goal[i])
-
-# Generate all possible moves from current state
-def get_moves(state):
-    i = state.index(0)          # Find position of blank (0)
-    x, y = i//3, i%3            # Convert index to 2D position
-    moves = []
-
-    # Possible directions: down, up, right, left
-    for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
-        nx, ny = x+dx, y+dy
-
-        # Check if move is within grid
-        if 0 <= nx < 3 and 0 <= ny < 3:
-            j = nx*3 + ny       # Convert back to 1D index
-            new = list(state)
-            new[i], new[j] = new[j], new[i]   # Swap blank with neighbor
-            moves.append(tuple(new))
-
-    return moves
-
-# A* Algorithm
-def astar(start):
-    pq = [(h(start), 0, start, [])]   # (f = g+h, g, state, path)
-    visited = set()
-
-    while pq:
-        f, g, state, path = heapq.heappop(pq)
-
-        # If goal reached, return full path
-        if state == goal:
-            return path + [state]
-
-        # Skip already visited states
-        if state in visited:
-            continue
-        visited.add(state)
-
-        # Explore neighbors
-        for nxt in get_moves(state):
-            if nxt not in visited:
-                heapq.heappush(pq, (g+1+h(nxt), g+1, nxt, path+[state]))
-
-# Function to print state in 3x3 grid format
-def print_grid(state):
-    for i in range(0, 9, 3):
-        print(state[i], state[i+1], state[i+2])
-    print("-----")
-
-# Example start state
-start = (1,2,3,4,0,6,7,5,8)
-
-# Solve
-solution = astar(start)
-
-# Print solution in grid format
-for step in solution:
-    print_grid(step)</p>
+          <p class="code">ansible web -i inventory -m ping
+ansible web -i inventory -m command -a "uptime"
+ansible web -i inventory -b -m apt -a "name=git state=present" --ask-become-pass
+ansible web -i inventory -m copy -a "src=test.txt dest=/tmp/test.txt"
+ansible web -i inventory -b -m service -a "name=apache2 state=restarted" --ask-become-pass</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -349,7 +293,7 @@ for step in solution:
   <!-- CARD 3 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Linear Regression</span>
+      <span class="question">Docker and Kubernetes</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -357,45 +301,46 @@ for step in solution:
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">#Linear Regression
+          <p class="code">docker --version
+kubectl version
+sudo usermod -aG docker $USER
+newgrp docker
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+mkdir myapp
+cd myapp
 
-df = pd.DataFrame({"X":[10,9,2,15,10,16,11,16], "Y":[15,80,10,50,45,98,38,93]})
+vim index.html
 
-df["X^2"]=df["X"]**2
-df["XY"]=df["X"]*df["Y"]
+vim Dockerfile
+FROM nginx:latest
+COPY . /usr/share/nginx/html
 
-n=len(df)
+docker build -t my-web-app .
 
-sum_x=df["X"].sum()
-sum_y=df["Y"].sum()
-sum_x2=df["X^2"].sum()
-sum_xy=df["XY"].sum()
+docker login
 
-m=(n*sum_xy - sum_y*sum_x)/(n*sum_x2 - sum_x**2)
-b=(sum_y - m*sum_x)/n
+docker tag my-web-app dockerusername/my-web-app
+docker push dockerusername/my-web-app
 
-df["Y(Predicted)"] = m*df["X"]+b
-print(df)
+kubectl create deployment myapp --image=dockerusername/my-web-app
+kubectl expose deployment myapp --type=NodePort --port=80
 
-print("\nCalculations: ")
-print("∑X: ", sum_x)
-print("∑Y: ", sum_y)
-print("∑X^2: ", sum_x2)
-print("∑XY: ", sum_xy)
+kubectl get pods
 
-print(f"\nBest Fit Line: Y = {m:.2f}X + {b:.2f}")
+kubectl port-forward service/myapp 8081:80
 
-plt.figure()
-plt.scatter(df["X"],df["Y"])
-plt.plot(df["X"],df["Y(Predicted)"])
-plt.xlabel("X (Hours)")
-plt.ylabel("Y (Risks)")
-plt.title("Linear Regression")
-plt.show()</p>
+kubectl scale deployment myapp --replicas=3
+
+kubectl get pods
+kubectl describe pods
+
+docker run -d -p 8080:80 --name myapp my-app
+docker stop myapp
+docker restart myapp
+docker rm myapp
+
+docker ps
+docker ps -a</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -408,7 +353,7 @@ plt.show()</p>
   <!-- CARD 4 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Uber</span>
+      <span class="question">Jenkins</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -416,68 +361,78 @@ plt.show()</p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import r2_score, mean_squared_error
+          <p class="code">sudo apt update
 
-# Load dataset
-df = pd.read_csv("uber.csv")
+vim ~/.docker/config.json
+{}
 
-print("\n========== ORIGINAL DATA ==========")
-print(df.head())
+docker run -d \
+--name jenkins \
+-p 8080:8080 \
+-p 50000:50000 \
+-v jenkins_home:/var/jenkins_home \
+-v /var/run/docker.sock:/var/run/docker.sock \
+jenkins/jenkins:lts
 
-# Basic cleaning
-df = df.dropna()
-df = df[df['fare_amount'] > 0]
+docker exec -it jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
-# -------- 1. Outlier Detection & Removal --------
-Q1 = df['fare_amount'].quantile(0.25)
-Q3 = df['fare_amount'].quantile(0.75)
-IQR = Q3 - Q1
+docker exec -u 0 -it jenkins bash
 
-print("\n========== OUTLIER ANALYSIS ==========")
-print("Q1:", Q1, " Q3:", Q3, " IQR:", IQR)
+apt update
+apt install docker.io -y
+chmod 666 /var/run/docker.sock
+usermod -aG docker jenkins
+exit
 
-df = df[(df['fare_amount'] >= Q1 - 1.5*IQR) & (df['fare_amount'] <= Q3 + 1.5*IQR)]
-print("Data after removing outliers:", df.shape)
+docker restart jenkins
 
-# -------- Feature Engineering --------
-df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
-df['hour'] = df['pickup_datetime'].dt.hour
+pipeline {
+    agent any
+    stages {
+        stage('Clone Code') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/mahi131005/naivestringalgorithm.git'
+            }
+        }
 
-X = df[['pickup_longitude','pickup_latitude','dropoff_longitude','dropoff_latitude','hour']]
-y = df['fare_amount']
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t myapp .'
+            }
+        }
 
-# -------- 2. Correlation --------
-print("\n========== CORRELATION WITH FARE ==========")
-corr_matrix = df.select_dtypes(include=[np.number]).corr()
-print(corr_matrix['fare_amount'].sort_values(ascending=False))
+        stage('Run Container') {
+            steps {
+                sh '''
+                    docker stop myapp-container || true
+                    docker rm myapp-container || true
+                    docker run -d -p 8082:80 --name myapp-container myapp
+                '''
+            }
+        }
+    }
+}
 
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+docker network create monitoring
 
-# -------- 3. Model Training --------
-lr = LinearRegression().fit(X_train, y_train)
-rf = RandomForestRegressor().fit(X_train, y_train)
+docker run -d --name node-exporter --network monitoring -p 9100:9100 prom/node-exporter
 
-# Predictions
-y_pred_lr = lr.predict(X_test)
-y_pred_rf = rf.predict(X_test)
+vim prometheus.yml
+global:
+  scrape_interval: 5s
 
-# -------- 4. Evaluation --------
-def evaluate(name, y_true, y_pred):
-    r2 = r2_score(y_true, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-    print(f"\n{name} Results:")
-    print("R2 Score :", round(r2, 4))
-    print("RMSE     :", round(rmse, 4))
+scrape_configs:
+  - job_name: 'node'
+    static_configs:
+      - targets:
+        - 'node-exporter:9100'
 
-print("\n========== MODEL EVALUATION ==========")
-evaluate("Linear Regression", y_test, y_pred_lr)
-evaluate("Random Forest", y_test, y_pred_rf)</p>
+docker run -d --name prometheus --network monitoring -p 9090:9090 -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+
+docker run -d --name grafana --network monitoring -p 3000:3000 grafana/grafana
+
+docker stop jenkins prometheus grafana node-exporter myapp-container</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -490,7 +445,7 @@ evaluate("Random Forest", y_test, y_pred_rf)</p>
   <!-- CARD 5 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Email</span>
+      <span class="question">Create repo, add files, commit</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -498,73 +453,18 @@ evaluate("Random Forest", y_test, y_pred_rf)</p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code"># Email Classification
-
-import pandas as pd 
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split 
-from sklearn.neighbors import KNeighborsClassifier 
-from sklearn.svm import SVC 
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-
-# Load dataset
-df = pd.read_csv("emails.csv")
-
-# Features & target
-X = df.drop(columns=['Email No.', 'Prediction']) 
-y = df['Prediction']
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# -------- KNN Model --------
-knn = KNeighborsClassifier(n_neighbors=5) 
-knn.fit(X_train, y_train) 
-y_pred_knn = knn.predict(X_test)
-
-# -------- SVM Model --------
-svm = SVC(kernel='linear') 
-svm.fit(X_train, y_train) 
-y_pred_svm = svm.predict(X_test) 
-
-# -------- Evaluation --------
-acc_knn = accuracy_score(y_test, y_pred_knn)
-acc_svm = accuracy_score(y_test, y_pred_svm)
-
-print("\n========== MODEL PERFORMANCE ==========")
-
-# KNN
-print("\n[KNN CLASSIFIER]")
-print("Accuracy : {:.4f}".format(acc_knn))
-print("\nClassification Report:\n", classification_report(y_test, y_pred_knn))
-
-plt.figure()
-plt.imshow(confusion_matrix(y_test, y_pred_knn))
-plt.title("KNN Confusion Matrix")
-plt.colorbar()
-plt.show()
-
-# SVM
-print("\n[SVM CLASSIFIER]")
-print("Accuracy : {:.4f}".format(acc_svm))
-print("\nClassification Report:\n", classification_report(y_test, y_pred_svm))
-
-# -------- Graph (Confusion Matrix Visualization) --------
-
-plt.figure()
-plt.imshow(confusion_matrix(y_test, y_pred_svm))
-plt.title("SVM Confusion Matrix")
-plt.colorbar()
-plt.show()
-
-# -------- Conclusion --------
-print("\n========== CONCLUSION ==========")
-if acc_svm > acc_knn:
-    print("SVM performs better than KNN based on higher accuracy.")
-elif acc_knn > acc_svm:
-    print("KNN performs better than SVM based on higher accuracy.")
-else:
-    print("Both KNN and SVM perform equally well.")</p>
+          <p class="code">Go to GitHub → New Repository  
+Name: “git-practice”  
+Click Create 
+mkdir git-practice 
+cd git-practice 
+git init 
+echo "Hello DevOps" > file1.txt 
+git add file1.txt 
+git commit -m "Initial commit" 
+git remote add origin https://github.com/mahi131005/git-practice.git 
+git branch -M main 
+git push -u origin main </p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -577,7 +477,7 @@ else:
   <!-- card 6 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Diabetes</span>
+      <span class="question">Branching + Merge + Conflict </span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -585,70 +485,17 @@ else:
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code"># Diabetes Prediction using KNN
-
-import pandas as pd 
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split 
-from sklearn.neighbors import KNeighborsClassifier 
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score 
-from sklearn.preprocessing import StandardScaler 
-import numpy as np
-
-# Load dataset
-df = pd.read_csv("diabetes.csv") 
-
-print("\n========== DATA PREVIEW ==========")
-print(df.head())
-
-# -------- Data Cleaning --------
-cols = ['Glucose','BloodPressure','SkinThickness','Insulin','BMI'] 
-for col in cols: 
-    df[col] = df[col].replace(0, np.nan) 
-    df[col].fillna(df[col].median(), inplace=True)
-
-# Features & target
-X = df.drop(columns=['Outcome']) 
-y = df['Outcome']
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-
-# -------- Scaling --------
-scaler = StandardScaler() 
-X_train = scaler.fit_transform(X_train) 
-X_test = scaler.transform(X_test)
-
-# -------- Model --------
-knn = KNeighborsClassifier(n_neighbors=8) 
-knn.fit(X_train, y_train) 
-y_pred = knn.predict(X_test) 
-
-# -------- Evaluation --------
-cm = confusion_matrix(y_test, y_pred) 
-accuracy = accuracy_score(y_test, y_pred) 
-precision = precision_score(y_test, y_pred) 
-recall = recall_score(y_test, y_pred) 
-
-print("\n[METRICS]")
-print("Accuracy  : {:.4f}".format(accuracy)) 
-print("Precision : {:.4f}".format(precision)) 
-print("Recall    : {:.4f}".format(recall))
-
-# -------- Visualization --------
-plt.figure()
-plt.imshow(cm)
-plt.title("Confusion Matrix (KNN - Diabetes)")
-plt.xlabel("Predicted")
-plt.ylabel("Actual")
-plt.colorbar()
-plt.show()
-
-# -------- Conclusion --------
-print("\n========== CONCLUSION ==========")
-print("The KNN model predicts diabetes with an accuracy of {:.2f}%.".format(accuracy*100))</p>
+          <p class="code">git checkout -b feature1 
+echo "Feature1 change" >> file1.txt 
+git add . 
+git commit -m "Feature1 update" 
+git checkout main 
+echo "Main branch change" >> file1.txt 
+git add . 
+git commit -m "Main update" 
+git merge feature1 -Manually change the file 
+git add file1.txt 
+git commit -m "Resolved merge conflict" </p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -661,7 +508,7 @@ print("The KNN model predicts diabetes with an accuracy of {:.2f}%.".format(accu
   <!-- card 7 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Sales Data</span>
+      <span class="question">Pull Requests (PR) </span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -669,56 +516,11 @@ print("The KNN model predicts diabetes with an accuracy of {:.2f}%.".format(accu
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code"># K-Means clustering/ hierarchical clustering on sales_data_sample.csv dataset
-
-import pandas as pd 
-import matplotlib.pyplot as plt 
-from sklearn.cluster import KMeans 
-from sklearn.preprocessing import StandardScaler 
-from scipy.cluster.hierarchy import dendrogram, linkage 
-
-df = pd.read_csv("sales_data_sample.csv", encoding='latin1')
-
-# 3. Select numeric features 
-X = df[['SALES', 'QUANTITYORDERED', 'PRICEEACH']] 
-
-# 4. Scale data (important for clustering) 
-scaler = StandardScaler() 
-X_scaled = scaler.fit_transform(X) 
-
-# ------------------------------- 
-# 5. Elbow Method 
-# ------------------------------- 
-inertia = [] 
-for k in range(1, 11): 
-    km = KMeans(n_clusters=k, random_state=42, n_init=10) 
-    km.fit(X_scaled) 
-    inertia.append(km.inertia_) 
-
-plt.figure() 
-plt.plot(range(1, 11), inertia, marker='o') 
-plt.xlabel("Number of Clusters (K)") 
-plt.ylabel("Inertia") 
-plt.title("Elbow Method") 
-plt.show() 
-
-# ------------------------------- 
-# 6. Apply K-Means (choose K from elbow) 
-# ------------------------------- 
-k = 3   # change based on elbow graph 
-kmeans = KMeans(n_clusters=k, random_state=42, n_init=10) 
-df['Cluster'] = kmeans.fit_predict(X_scaled) 
-print(df[['SALES', 'QUANTITYORDERED', 'PRICEEACH', 'Cluster']].head()) 
-
-# ------------------------------- 
-# 7. Visualize Clusters 
-# ------------------------------- 
-plt.figure() 
-plt.scatter(df['SALES'], df['QUANTITYORDERED'], c=df['Cluster']) 
-plt.xlabel("Sales") 
-plt.ylabel("Quantity Ordered") 
-plt.title("K-Means Clusters") 
-plt.show() </p>
+          <p class="code">Push branch: git push origin feature1 
+2. Go to GitHub  
+3. Click Compare & Pull Request  
+4. Add description → Click Create PR  
+5. Click Merge</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -731,7 +533,7 @@ plt.show() </p>
   <!-- card 8 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Fibonacci</span>
+      <span class="question">Clone, Modify, Push </span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -739,28 +541,12 @@ plt.show() </p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">#Fibonacci Sequence with Step Count
-
-def fibonacci_with_stepcount(n):
-    if n<=0:
-        return 0,1
-    elif n==1:
-        return 1,1
-    
-    a,b = 0,1
-    step_count = 2
-    
-    for i in range(2,n+1):
-        a,b = b, a+b
-        step_count += 1
-        
-    return b, step_count
-
-
-n = int(input("Enter the value of n for Fibonacci: "))
-fib_num, step_count = fibonacci_with_stepcount(n)
-print("The number in Fibonacci sequence at nth place is: ", fib_num)
-print("The step count for the program is: ", step_count)
+          <p class="code">git clone https://github.com/mahi131005/git-practice.git 
+cd devops-lab 
+echo "Cloned repo update" >> file2.txt 
+git add . 
+git commit -m "Update from clone" 
+git push 
         </p>
         </div>
         <button class="copy-btn">
@@ -775,7 +561,7 @@ print("The step count for the program is: ", step_count)
   <!-- card 9 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Job Sequencing</span>
+      <span class="question">Branch strategies </span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -783,40 +569,14 @@ print("The step count for the program is: ", step_count)
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">#Job Sequencing with deadlines using the greedy method
-
-class Job:
-    def __init__(self, job_id, deadlines, profit):
-        self.job_id = job_id
-        self.deadlines = deadlines
-        self.profit = profit
-        
-def job_sequencing(jobs):
-       
-    jobs.sort(key=lambda x: x.profit, reverse = True)
-        
-    max_deadline = max(job.deadlines for job in jobs)
-        
-    slots = [-1]*max_deadline
-    job_order = []
-    total_profit = 0
-        
-    for job in jobs:
-        for j in range(min(job.deadlines - 1, max_deadline - 1), -1, -1):
-            if slots[j] == -1:
-                slots[j] = job.job_id
-                total_profit += job.profit
-                job_order.append(job.job_id)
-                break
-                    
-    return job_order, total_profit
-    
-if __name__ == "__main__":
-    jobs = [Job("J1",2,100),Job("J2",1,19),Job("J3",2,27),Job("J4",1,250),Job("J5",3,15)]
-    
-    job_sequence, total_profit = job_sequencing(jobs)
-    print("Job Scheduling Order: ", job_sequence)
-    print("Total Profit: ", total_profit)</p>
+          <p class="code">git checkout -b dev 
+git checkout -b testing 
+git checkout dev 
+echo "Dev work" > dev.txt 
+git add . 
+git commit -m "Dev changes" 
+git checkout main 
+git merge dev --no-ff</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -825,364 +585,6 @@ if __name__ == "__main__":
       </div>
     </div>
   </div>
-
-
-  <!-- card 10 -->
-    <div class="card">
-    <div class="card-header">
-      <span class="question">Fractional Knapsack</span>
-      <span class="arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </span>
-    </div>
-    <div class="card-body">
-      <div class="code-wrapper">
-        <div class="code-block">
-          <p class="code">#Fractional Knapsack using Greedy Algorithm
-
-class Items:
-    def __init__(self, value, weight):
-        self.value = value
-        self.weight = weight
-        self.ratio = value / weight
-        
-def fractional_knapsack(items,capacity):
-    
-    items.sort(key = lambda x: x.ratio, reverse = True)
-    
-    total_value = 0.0
-    
-    for item in items:
-        if capacity >= item.weight:
-            total_value += item.value
-            capacity -= item.weight
-        else:
-            total_value += item.ratio*capacity
-            break
-            
-    return total_value
-
-if __name__ == "__main__":
-    items = [Items(60,10),Items(100,20),Items(120,30)]
-    capacity = 50
-    
-    max_value = fractional_knapsack(items, capacity)
-    print("Maximum Value: ", max_value)</p>
-        </div>
-        <button class="copy-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy
-        </button>
-      </div>
-    </div>
-  </div>
-
-
-    <!-- card 11 -->
-    <div class="card">
-    <div class="card-header">
-      <span class="question">0/1 Knapsack (DP)</span>
-      <span class="arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </span>
-    </div>
-    <div class="card-body">
-      <div class="code-wrapper">
-        <div class="code-block">
-          <p class="code">#0/1 Knapsack using dynamic programming
-
-def knapsack(weight, value, capacity):
-    
-    n = len(value)
-    dp = [[0]*(capacity+1) for _ in range(n+1)]
-    
-    for i in range(1, n+1):
-        for w in range(1, capacity+1):
-            if weight[i-1]<=w:
-                dp[i][w] = max(dp[i-1][w], value[i-1] + dp[i-1][w - weight[i-1]])
-            else:
-                dp[i][w]=dp[i-1][w]
-                
-    return dp[n][capacity]
-
-weights = [1,2,3]
-values = [6,10,12]
-capacity = 5
-
-max_value = knapsack(weights, values, capacity)
-print("Max Value of 0/1 Knapsack using DP: ", max_value)</p>
-        </div>
-        <button class="copy-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy
-        </button>
-      </div>
-    </div>
-  </div>
-
-    <!-- card 12 -->
-    <div class="card">
-    <div class="card-header">
-      <span class="question">0/1 Knapsack (BB)</span>
-      <span class="arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </span>
-    </div>
-    <div class="card-body">
-      <div class="code-wrapper">
-        <div class="code-block">
-          <p class="code">def knapsack_bb(weights, values, capacity):
-    n = len(values)
-    # Sort by value/weight ratio descending
-    idx = sorted(range(n), key=lambda i: values[i]/weights[i], reverse=True)
-    w = [weights[i] for i in idx]
-    v = [values[i] for i in idx]
-    max_profit = 0
-    
-    def bound(i, profit, weight):
-        """Calculate upper bound using fractional knapsack"""
-        while i < n and weight + w[i] <= capacity:
-            profit += v[i]
-            weight += w[i]
-            i += 1
-        # Add fraction of next item if possible
-        if i < n:
-            profit += (capacity - weight) * v[i] / w[i]
-        return profit
-    
-    def dfs(i, profit, weight):
-        nonlocal max_profit
-        # Prune if bound is not promising
-        if bound(i, profit, weight) <= max_profit:
-            return
-        # Update max profit
-        if profit > max_profit:
-            max_profit = profit
-        # Base case
-        if i >= n:
-            return
-        # Branch 1: Include item i
-        if weight + w[i] <= capacity:
-            dfs(i + 1, profit + v[i], weight + w[i])
-        # Branch 2: Exclude item i
-        dfs(i + 1, profit, weight)
-    
-    dfs(0, 0, 0)
-    return max_profit
-
-# Example
-values = [6, 10, 12]
-weights = [1, 2, 3]
-capacity = 5
-print("Maximum value:", knapsack_bb(weights, values, capacity))</p>
-        </div>
-        <button class="copy-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy
-        </button>
-      </div>
-    </div>
-  </div>
-
-    <!-- card 13 -->
-    <div class="card">
-    <div class="card-header">
-      <span class="question">Graph Coloring</span>
-      <span class="arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </span>
-    </div>
-    <div class="card-body">
-      <div class="code-wrapper">
-        <div class="code-block">
-          <p class="code">#Implement GraphColoring algorithm using backtracking
-
-def is_safe(graph, color, c, v):
-    for i in range(len(graph)):
-        if graph[v][i] == 1 and color[i] == c:
-            return False
-        
-    return True
-
-def graph_coloring_util(graph, m, color, v):
-    if v == len(graph):
-        return True
-    
-    for c in range(1, m+1):
-        if is_safe(graph, color, c, v):
-            color[v]=c
-            if graph_coloring_util(graph, m, color, v+1):
-                return True
-            color[v]=0
-            
-    return False
-
-def graph_coloring(graph, m):
-    color = [0]*len(graph)
-    
-    if not graph_coloring_util(graph, m, color, 0):
-        print("No Solution")
-        return False
-    
-    print("Solution exists")
-    for i in range(len(color)):
-        print(f'Vertex{i} ----> Color{color[i]}')
-    return True
-
-graph = [[0,1,1,1],
-        [1,0,1,0],
-        [1,1,0,1],
-        [1,0,1,0]]
-
-m = 3
-graph_coloring(graph, m)</p>
-        </div>
-        <button class="copy-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy
-        </button>
-      </div>
-    </div>
-  </div>
-
-    <!-- card 14 -->
-    <div class="card">
-    <div class="card-header">
-      <span class="question">Huffman</span>
-      <span class="arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </span>
-    </div>
-    <div class="card-body">
-      <div class="code-wrapper">
-        <div class="code-block">
-          <p class="code">#huffman coding using Greedy Method
-
-import heapq
-from collections import Counter
-
-class Node:
-    def __init__(self, char=None, freq=0, left=None, right=None):
-        self.char, self.freq = char, freq
-        self.left, self.right = left, right
-
-    def __lt__(self, other):
-        return self.freq < other.freq
-
-# Build tree
-def build_tree(text):
-    heap = [Node(c, f) for c, f in Counter(text).items()]
-    heapq.heapify(heap)
-
-    while len(heap) > 1:
-        a, b = heapq.heappop(heap), heapq.heappop(heap)
-        heapq.heappush(heap, Node(None, a.freq + b.freq, a, b))
-
-    return heap[0]
-
-# Generate codes
-def get_codes(node, code="", codes={}):
-    if node:
-        if node.char:
-            codes[node.char] = code
-        get_codes(node.left, code + "0", codes)
-        get_codes(node.right, code + "1", codes)
-    return codes
-
-# Encode & Decode
-def encode(text):
-    root = build_tree(text)
-    codes = get_codes(root, "", {})
-    return ''.join(codes[c] for c in text), codes, root
-
-def decode(encoded, root):
-    res, node = "", root
-    for bit in encoded:
-        node = node.left if bit == "0" else node.right
-        if node.char:
-            res += node.char
-            node = root
-    return res
-
-# Example
-text = "huffman coding is greedy"
-enc, codes, tree = encode(text)
-print("Codes:", codes)
-print("Encoded:", enc)
-print("Decoded:", decode(enc, tree))</p>
-        </div>
-        <button class="copy-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy
-        </button>
-      </div>
-    </div>
-  </div>
-
-    <!-- card 15 -->
-    <div class="card">
-    <div class="card-header">
-      <span class="question">Travelling Salesman Problem</span>
-      <span class="arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </span>
-    </div>
-    <div class="card-body">
-      <div class="code-wrapper">
-        <div class="code-block">
-          <p class="code">import heapq
-
-def tsp(cost):
-    n = len(cost)
-    pq = [(0, [0])]   # (current_cost, path)
-    min_cost = float('inf')
-    best_path = []
-
-    while pq:
-        curr_cost, path = heapq.heappop(pq)
-        curr_city = path[-1]
-
-        # If all cities visited, return to start
-        if len(path) == n:
-            total_cost = curr_cost + cost[curr_city][0]
-            if total_cost < min_cost:
-                min_cost = total_cost
-                best_path = path + [0]
-            continue
-
-        # Try next cities
-        for next_city in range(n):
-            if next_city not in path:
-                new_cost = curr_cost + cost[curr_city][next_city]
-
-                # Bounding (prune if already worse)
-                if new_cost < min_cost:
-                    heapq.heappush(pq, (new_cost, path + [next_city]))
-
-    return best_path, min_cost
-
-
-# Example
-cost_matrix = [
-    [float('inf'), 10, 15, 20],
-    [10, float('inf'), 35, 25],
-    [15, 35, float('inf'), 30],
-    [20, 25, 30, float('inf')]
-]
-
-path, cost = tsp(cost_matrix)
-print("Minimum Cost:", cost)
-print("Path:", path)</p>
-        </div>
-        <button class="copy-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy
-        </button>
-      </div>
-    </div>
-  </div>
-
-
   <!-- Copy one of the blocks above to add more cards -->
 
 </div>
