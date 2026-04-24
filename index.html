@@ -236,9 +236,9 @@ vim webserver.yml
       copy:
         dest: /var/www/html/index.html
         content: |
-          "<h1>Welcome to {{ app_name }}</h1>"
-          "<p>Owner: {{ page_owner }}</p>"
-          "<p>Server configured using Ansible</p>"
+          "Welcome to {{ app_name }}"
+          "Owner: {{ page_owner }}"
+          "Server configured using Ansible"
       notify: Restart Apache
 
     - name: Ensure Apache is running
