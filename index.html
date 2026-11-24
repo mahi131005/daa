@@ -191,7 +191,7 @@
   <!-- CARD 1 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Ansible</span>
+      <span class="question">Implement a basic CNN for classifying handwritten digits.</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -199,63 +199,42 @@
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">sudo apt update
-sudo apt install ansible git -y
+          <p class="code">import tensorflow as tf
+import matplotlib.pyplot as plt
+from tensorflow.keras import layers as L
 
-mkdir ansible-web
-cd ansible-web
+(x, y), (xt, yt) = tf.keras.datasets.mnist.load_data()
+x, xt = x[..., None] / 255., xt[..., None] / 255.
 
-vim inventory
-[web]
-localhost ansible_connection=local
+# Display sample digits
+plt.figure(figsize=(10, 2))
+for i in range(8):
+    plt.subplot(1, 8, i+1)
+    plt.imshow(x[i].squeeze(), cmap='gray')
+    plt.title(y[i])
+    plt.axis('off')
+plt.show()
 
-vim webserver.yml
----
-- name: Simple Web Server Setup with Multiple Packages
-  hosts: web
-  become: yes
+# Build and train CNN
+m = tf.keras.Sequential([
+    L.Input((28, 28, 1)),
+    L.Conv2D(32, 3, activation='relu'), L.MaxPool2D(),
+    L.Conv2D(64, 3, activation='relu'), L.MaxPool2D(),
+    L.Flatten(), L.Dense(10, activation='softmax')
+])
+m.compile('adam', 'sparse_categorical_crossentropy', metrics=['accuracy'])
+m.fit(x, y, epochs=3, batch_size=128, validation_split=0.1)
 
-  vars:
-    app_name: MyWebApp
-    page_owner: Admin
-    packages:
-      - apache2
-      - git
-      - curl
-      - vim
+# Evaluate model
+print("Test loss and accuracy:", m.evaluate(xt, yt))
 
-  tasks:
-
-    - name: Install required packages
-      apt:
-        name: "{{ packages }}"
-        state: present
-        update_cache: yes
-
-    - name: Create simple HTML page
-      copy:
-        dest: /var/www/html/index.html
-        content: |
-          "Welcome to {{ app_name }}"
-          "Owner: {{ page_owner }}"
-          "Server configured using Ansible"
-      notify: Restart Apache
-
-    - name: Ensure Apache is running
-      service:
-        name: apache2
-        state: started
-        enabled: yes
-
-  handlers:
-    - name: Restart Apache
-      service:
-        name: apache2
-        state: restarted
-
-ansible-playbook -i inventory webserver.yml --ask-become-pass
-
-http://localhost:8080</p>
+# Test a digit
+i = 10
+pred = m.predict(xt[i:i+1], verbose=0).argmax()
+plt.imshow(xt[i].squeeze(), cmap='gray')
+plt.title(f"Actual: {yt[i]}, Predicted: {pred}")
+plt.axis('off')
+plt.show()</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -268,7 +247,7 @@ http://localhost:8080</p>
   <!-- CARD 2 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Ansible - ad-hoc commands</span>
+      <span class="question">Use a pre-trained model for image classification with fine-tuning.</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -276,11 +255,76 @@ http://localhost:8080</p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">ansible web -i inventory -m ping
-ansible web -i inventory -m command -a "uptime"
-ansible web -i inventory -b -m apt -a "name=git state=present" --ask-become-pass
-ansible web -i inventory -m copy -a "src=test.txt dest=/tmp/test.txt"
-ansible web -i inventory -b -m service -a "name=apache2 state=restarted" --ask-become-pass</p>
+          <p class="code">
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from tensorflow.keras import layers as L
+from tensorflow.keras.applications import MobileNetV2
+
+# Load CIFAR-10 dataset
+(x, y), (xt, yt) = tf.keras.datasets.cifar10.load_data()
+y, yt = y.flatten(), yt.flatten()
+
+classes = ['airplane', 'automobile', 'bird', 'cat', 'deer',
+           'dog', 'frog', 'horse', 'ship', 'truck']
+
+# Display sample images
+plt.figure(figsize=(10, 2))
+for i in range(8):
+    plt.subplot(1, 8, i+1)
+    plt.imshow(x[i])
+    plt.title(classes[y[i]], fontsize=8)
+    plt.axis('off')
+plt.show()
+
+# Load pre-trained MobileNetV2
+base = MobileNetV2(weights='imagenet', include_top=False,
+                   input_shape=(64, 64, 3))
+base.trainable = False
+
+# Build model
+m = tf.keras.Sequential([
+    L.Input((32, 32, 3)),
+    L.Resizing(64, 64),
+    L.Rescaling(1./127.5, offset=-1),
+    base,
+    L.GlobalAveragePooling2D(),
+    L.Dense(10, activation='softmax')
+])
+
+# Train classification layer
+m.compile(optimizer='adam',
+          loss='sparse_categorical_crossentropy',
+          metrics=['accuracy'])
+
+m.fit(x[:5000], y[:5000], epochs=2, batch_size=64,
+      validation_split=0.1)
+
+# Fine-tune last 20 layers
+base.trainable = True
+for layer in base.layers[:-20]:
+    layer.trainable = False
+for layer in base.layers:
+    if isinstance(layer, L.BatchNormalization):
+        layer.trainable = False
+
+m.compile(optimizer=tf.keras.optimizers.Adam(1e-5),
+          loss='sparse_categorical_crossentropy',
+          metrics=['accuracy'])
+
+m.fit(x[:5000], y[:5000], epochs=1, batch_size=64)
+
+# Evaluate model
+print("Test Accuracy:", m.evaluate(xt, yt, verbose=0)[1])
+
+# Test one image
+i = 10
+pred = m.predict(xt[i:i+1], verbose=0).argmax()
+plt.imshow(xt[i])
+plt.title(f"Actual: {classes[yt[i]]}, Predicted: {classes[pred]}")
+plt.axis('off')
+plt.show()
+</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -293,7 +337,7 @@ ansible web -i inventory -b -m service -a "name=apache2 state=restarted" --ask-b
   <!-- CARD 3 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Docker and Kubernetes</span>
+      <span class="question">Implement an RNN to generate text based on a corpus of text.</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -301,46 +345,76 @@ ansible web -i inventory -b -m service -a "name=apache2 state=restarted" --ask-b
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">docker --version
-kubectl version
-sudo usermod -aG docker $USER
-newgrp docker
+          <p class="code">
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
 
-mkdir myapp
-cd myapp
+# Text corpus
+text = """machine learning is a branch of artificial intelligence.
+deep learning uses neural networks.
+recurrent neural networks process sequential data.
+machine learning helps computers learn from data.
+deep learning is useful for image and text processing."""
 
-vim index.html
+# Tokenization
+tokenizer = tf.keras.preprocessing.text.Tokenizer()
+tokenizer.fit_on_texts([text])
+seq = tokenizer.texts_to_sequences([text])[0]
 
-vim Dockerfile
-FROM nginx:latest
-COPY . /usr/share/nginx/html
+# Create input and output sequences
+X, y = [], []
+for i in range(2, len(seq)):
+    X.append(seq[i-2:i])
+    y.append(seq[i])
 
-docker build -t my-web-app .
+X, y = np.array(X), np.array(y)
+vocab = len(tokenizer.word_index) + 1
 
-docker login
+# Build Simple RNN model
+model = tf.keras.Sequential([
+    tf.keras.layers.Embedding(vocab, 16),
+    tf.keras.layers.SimpleRNN(32),
+    tf.keras.layers.Dense(vocab, activation='softmax')
+])
 
-docker tag my-web-app dockerusername/my-web-app
-docker push dockerusername/my-web-app
+# Compile model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
 
-kubectl create deployment myapp --image=dockerusername/my-web-app
-kubectl expose deployment myapp --type=NodePort --port=80
+# Train model
+history = model.fit(X, y, epochs=100, verbose=0)
 
-kubectl get pods
+# Plot accuracy and loss
+plt.figure(figsize=(10, 4))
 
-kubectl port-forward service/myapp 8081:80
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'])
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
 
-kubectl scale deployment myapp --replicas=3
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'])
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
 
-kubectl get pods
-kubectl describe pods
+plt.tight_layout()
+plt.show()
 
-docker run -d -p 8080:80 --name myapp my-app
-docker stop myapp
-docker restart myapp
-docker rm myapp
+# Generate text
+seed = "machine learning"
+for _ in range(10):
+    tokens = tokenizer.texts_to_sequences([seed])[0][-2:]
+    tokens = tf.keras.preprocessing.sequence.pad_sequences(
+        [tokens], maxlen=2)
+    pred = model.predict(tokens, verbose=0).argmax()
+    seed += " " + tokenizer.index_word.get(pred, "")
 
-docker ps
-docker ps -a</p>
+print("Generated Text:\n", seed)
+</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -353,7 +427,7 @@ docker ps -a</p>
   <!-- CARD 4 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Jenkins</span>
+      <span class="question">Implement an LSTM to generate text based on a corpus of text.</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -361,78 +435,76 @@ docker ps -a</p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">sudo apt update
+          <p class="code">
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
 
-vim ~/.docker/config.json
-{}
+# Text corpus
+text = """machine learning is a branch of artificial intelligence.
+deep learning uses neural networks.
+recurrent neural networks process sequential data.
+machine learning helps computers learn from data.
+deep learning is useful for image and text processing."""
 
-docker run -d \
---name jenkins \
--p 8080:8080 \
--p 50000:50000 \
--v jenkins_home:/var/jenkins_home \
--v /var/run/docker.sock:/var/run/docker.sock \
-jenkins/jenkins:lts
+# Tokenization
+tokenizer = tf.keras.preprocessing.text.Tokenizer()
+tokenizer.fit_on_texts([text])
+seq = tokenizer.texts_to_sequences([text])[0]
 
-docker exec -it jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+# Create input and output sequences
+X, y = [], []
+for i in range(2, len(seq)):
+    X.append(seq[i-2:i])
+    y.append(seq[i])
 
-docker exec -u 0 -it jenkins bash
+X, y = np.array(X), np.array(y)
+vocab = len(tokenizer.word_index) + 1
 
-apt update
-apt install docker.io -y
-chmod 666 /var/run/docker.sock
-usermod -aG docker jenkins
-exit
+# Build LSTM model
+model = tf.keras.Sequential([
+    tf.keras.layers.Embedding(vocab, 16),
+    tf.keras.layers.LSTM(32),
+    tf.keras.layers.Dense(vocab, activation='softmax')
+])
 
-docker restart jenkins
+# Compile model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
 
-pipeline {
-    agent any
-    stages {
-        stage('Clone Code') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/mahi131005/naivestringalgorithm.git'
-            }
-        }
+# Train model
+history = model.fit(X, y, epochs=100, verbose=0)
 
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t myapp .'
-            }
-        }
+# Plot accuracy and loss
+plt.figure(figsize=(10, 4))
 
-        stage('Run Container') {
-            steps {
-                sh '''
-                    docker stop myapp-container || true
-                    docker rm myapp-container || true
-                    docker run -d -p 8082:80 --name myapp-container myapp
-                '''
-            }
-        }
-    }
-}
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'])
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
 
-docker network create monitoring
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'])
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
 
-docker run -d --name node-exporter --network monitoring -p 9100:9100 prom/node-exporter
+plt.tight_layout()
+plt.show()
 
-vim prometheus.yml
-global:
-  scrape_interval: 5s
+# Generate text
+seed = "machine learning"
+for _ in range(10):
+    tokens = tokenizer.texts_to_sequences([seed])[0][-2:]
+    tokens = tf.keras.preprocessing.sequence.pad_sequences(
+        [tokens], maxlen=2)
+    pred = model.predict(tokens, verbose=0).argmax()
+    seed += " " + tokenizer.index_word.get(pred, "")
 
-scrape_configs:
-  - job_name: 'node'
-    static_configs:
-      - targets:
-        - 'node-exporter:9100'
-
-docker run -d --name prometheus --network monitoring -p 9090:9090 -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
-
-docker run -d --name grafana --network monitoring -p 3000:3000 grafana/grafana
-
-docker stop jenkins prometheus grafana node-exporter myapp-container</p>
+print("Generated Text:\n", seed)
+</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -445,7 +517,7 @@ docker stop jenkins prometheus grafana node-exporter myapp-container</p>
   <!-- CARD 5 -->
   <div class="card">
     <div class="card-header">
-      <span class="question">Create repo, add files, commit</span>
+      <span class="question">Facial Emotion Recognition using CNN - Build a convolutional neural network (CNN) model to detect emotions from facial images (happy, sad, angry, etc.). [Dataset: FER-2013 (Facial Emotion Recognition dataset)</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -453,18 +525,122 @@ docker stop jenkins prometheus grafana node-exporter myapp-container</p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">Go to GitHub → New Repository  
-Name: “git-practice”  
-Click Create 
-mkdir git-practice 
-cd git-practice 
-git init 
-echo "Hello DevOps" > file1.txt 
-git add file1.txt 
-git commit -m "Initial commit" 
-git remote add origin https://github.com/mahi131005/git-practice.git 
-git branch -M main 
-git push -u origin main </p>
+          <p class="code">
+
+https://www.kaggle.com/datasets/msambare/fer2013
+           
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import os, zipfile
+
+# Upload ZIP file
+try:
+    from google.colab import files
+    uploaded = files.upload()
+    zip_path = next(iter(uploaded))
+except ImportError:
+    zip_path = input("Enter ZIP file path: ")
+
+# Extract ZIP file
+os.makedirs("FER_data", exist_ok=True)
+with zipfile.ZipFile(zip_path, 'r') as z:
+    z.extractall("FER_data")
+
+# Find train and test folders
+train_dir = test_dir = None
+for root, dirs, files_list in os.walk("FER_data"):
+    if os.path.basename(root).lower() == "train":
+        train_dir = root
+    if os.path.basename(root).lower() == "test":
+        test_dir = root
+
+print("Train folder:", train_dir)
+print("Test folder:", test_dir)
+
+# Load dataset
+train_ds = tf.keras.utils.image_dataset_from_directory(
+    train_dir, image_size=(48, 48), color_mode='grayscale',
+    batch_size=64, validation_split=0.2, subset='training',
+    seed=123
+)
+
+val_ds = tf.keras.utils.image_dataset_from_directory(
+    train_dir, image_size=(48, 48), color_mode='grayscale',
+    batch_size=64, validation_split=0.2, subset='validation',
+    seed=123
+)
+
+classes = train_ds.class_names
+
+test_ds = tf.keras.utils.image_dataset_from_directory(
+    test_dir, image_size=(48, 48), color_mode='grayscale',
+    batch_size=64, class_names=classes, shuffle=False
+)
+
+# Display sample images
+images, labels = next(iter(train_ds))
+plt.figure(figsize=(10, 3))
+for i in range(8):
+    plt.subplot(1, 8, i+1)
+    plt.imshow(images[i].numpy().squeeze(), cmap='gray')
+    plt.title(classes[labels[i]], fontsize=7)
+    plt.axis('off')
+plt.show()
+
+# Build CNN model
+model = tf.keras.Sequential([
+    tf.keras.layers.Input((48, 48, 1)),
+    tf.keras.layers.Rescaling(1./255),
+    tf.keras.layers.Conv2D(32, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Conv2D(64, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Conv2D(128, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dense(len(classes), activation='softmax')
+])
+
+# Compile model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Train model
+history = model.fit(train_ds, validation_data=val_ds, epochs=5)
+
+# Plot accuracy and loss
+plt.figure(figsize=(10, 4))
+
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Training')
+plt.plot(history.history['val_accuracy'], label='Validation')
+plt.title('Accuracy')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Training')
+plt.plot(history.history['val_loss'], label='Validation')
+plt.title('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Evaluate model
+print("Test Loss and Accuracy:", model.evaluate(test_ds))
+
+# Test one facial image
+for images, labels in test_ds.take(1):
+    i = 0
+    pred = model.predict(images[i:i+1], verbose=0).argmax()
+    plt.imshow(images[i].numpy().squeeze(), cmap='gray')
+    plt.title(f"Actual: {classes[labels[i]]} | Predicted: {classes[pred]}")
+    plt.axis('off')
+    plt.show()
+</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -477,7 +653,7 @@ git push -u origin main </p>
   <!-- card 6 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Branching + Merge + Conflict </span>
+      <span class="question">Facial Emotion Recognition using CNN - Build a convolutional neural network (CNN) model to detect emotions from facial images (happy, sad, angry, etc.). [Dataset: CK+ dataset.] </span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -485,17 +661,172 @@ git push -u origin main </p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">git checkout -b feature1 
-echo "Feature1 change" >> file1.txt 
-git add . 
-git commit -m "Feature1 update" 
-git checkout main 
-echo "Main branch change" >> file1.txt 
-git add . 
-git commit -m "Main update" 
-git merge feature1 -Manually change the file 
-git add file1.txt 
-git commit -m "Resolved merge conflict" </p>
+          <p class="code">
+
+https://www.kaggle.com/datasets/shawon10/ckplus
+
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import os
+import zipfile
+
+# Upload ZIP file
+from google.colab import files
+uploaded = files.upload()
+
+zip_path = next(iter(uploaded))
+
+# Extract ZIP file
+extract_dir = "CK_data"
+os.makedirs(extract_dir, exist_ok=True)
+
+with zipfile.ZipFile(zip_path, 'r') as z:
+    z.extractall(extract_dir)
+
+print("Dataset extracted successfully!")
+
+# Automatically find the emotion folders
+image_extensions = ('.jpg', '.jpeg', '.png', '.bmp')
+
+data_dir = None
+max_classes = 0
+
+for root, dirs, files_list in os.walk(extract_dir):
+    valid_classes = []
+
+    for folder in dirs:
+        folder_path = os.path.join(root, folder)
+
+        if any(f.lower().endswith(image_extensions)
+               for f in os.listdir(folder_path)):
+            valid_classes.append(folder)
+
+    if len(valid_classes) > max_classes:
+        max_classes = len(valid_classes)
+        data_dir = root
+
+if data_dir is None or max_classes < 2:
+    print("Could not identify emotion folders.")
+    print("Extracted folders:")
+    for root, dirs, files_list in os.walk(extract_dir):
+        print(root, dirs)
+    raise ValueError("Please check the ZIP folder structure.")
+
+print("Dataset folder:", data_dir)
+
+# Load dataset and split into training and validation
+train_ds = tf.keras.utils.image_dataset_from_directory(
+    data_dir,
+    image_size=(48, 48),
+    color_mode='grayscale',
+    batch_size=16,
+    validation_split=0.2,
+    subset='training',
+    seed=123
+)
+
+val_ds = tf.keras.utils.image_dataset_from_directory(
+    data_dir,
+    image_size=(48, 48),
+    color_mode='grayscale',
+    batch_size=16,
+    validation_split=0.2,
+    subset='validation',
+    seed=123
+)
+
+classes = train_ds.class_names
+print("Emotion classes:", classes)
+
+# Display sample images
+images, labels = next(iter(train_ds))
+
+plt.figure(figsize=(10, 4))
+
+for i in range(min(8, len(images))):
+    plt.subplot(2, 4, i+1)
+    plt.imshow(images[i].numpy().squeeze(), cmap='gray')
+    plt.title(classes[int(labels[i])])
+    plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# Build CNN model
+model = tf.keras.Sequential([
+    tf.keras.layers.Input(shape=(48, 48, 1)),
+    tf.keras.layers.Rescaling(1./255),
+
+    tf.keras.layers.Conv2D(32, (3,3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(2,2),
+
+    tf.keras.layers.Conv2D(64, (3,3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(2,2),
+
+    tf.keras.layers.Flatten(),
+
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.3),
+
+    tf.keras.layers.Dense(len(classes), activation='softmax')
+])
+
+# Compile model
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Train model
+history = model.fit(
+    train_ds,
+    validation_data=val_ds,
+    epochs=10
+)
+
+# Plot accuracy and loss
+plt.figure(figsize=(10,4))
+
+plt.subplot(1,2,1)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.subplot(1,2,2)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Evaluate model
+loss, accuracy = model.evaluate(val_ds)
+print("Validation Accuracy:", accuracy)
+
+# Test one facial image
+for images, labels in val_ds.take(1):
+
+    i = 0
+
+    prediction = model.predict(images[i:i+1], verbose=0)
+    predicted_class = prediction.argmax()
+
+    plt.imshow(images[i].numpy().squeeze(), cmap='gray')
+    plt.title(
+        f"Actual: {classes[int(labels[i])]}\n"
+        f"Predicted: {classes[predicted_class]}"
+    )
+    plt.axis('off')
+    plt.show()
+</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -508,7 +839,9 @@ git commit -m "Resolved merge conflict" </p>
   <!-- card 7 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Pull Requests (PR) </span>
+      <span class="question">Object Detection using YOLO
+Flowers detection: https://www.kaggle.com/datasets/imsparsh/flowers-dataset/data
+</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -516,11 +849,130 @@ git commit -m "Resolved merge conflict" </p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">Push branch: git push origin feature1 
-2. Go to GitHub  
-3. Click Compare & Pull Request  
-4. Add description → Click Create PR  
-5. Click Merge</p>
+          <p class="code"> https://www.kaggle.com/datasets/imsparsh/flowers-dataset/data
+           
+# Install YOLO
+!pip install -q ultralytics
+
+import os
+import glob
+import random
+import shutil
+import matplotlib.pyplot as plt
+from PIL import Image
+from ultralytics import YOLO
+from google.colab import files
+
+# Upload dataset ZIP
+try:
+  uploaded = files.upload()
+  zip_path = next(iter(uploaded))
+except ImportError:
+  zip_path = input("Enter ZIP file path: ")
+
+# Extract dataset
+import zipfile
+
+extract_dir = "Flowers_Data"
+os.makedirs(extract_dir, exist_ok=True)
+
+with zipfile.ZipFile(zip_path, 'r') as z:
+    z.extractall(extract_dir)
+
+print("Dataset extracted successfully!")
+
+# Find flower folders
+classes = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
+data_dir = None
+
+for root, dirs, files_list in os.walk(extract_dir):
+    found = [d.lower() for d in dirs]
+
+    if all(c in found for c in classes):
+        data_dir = root
+        break
+
+if data_dir is None:
+    raise ValueError("Flower class folders not found. Check ZIP structure.")
+
+print("Dataset folder:", data_dir)
+
+# Prepare train and validation folders
+output_dir = "flowers_yolo"
+if os.path.exists(output_dir):
+    shutil.rmtree(output_dir)
+
+for split in ['train', 'val']:
+    for cls in classes:
+        os.makedirs(os.path.join(output_dir, split, cls),
+                    exist_ok=True)
+
+# Split images (80% training, 20% validation)
+random.seed(42)
+
+for cls in classes:
+    folder = os.path.join(data_dir, cls)
+
+    images = []
+    for ext in ['*.jpg', '*.jpeg', '*.png']:
+        images.extend(glob.glob(os.path.join(folder, ext)))
+
+    random.shuffle(images)
+    split = int(0.8 * len(images))
+
+    train_images = images[:split]
+    val_images = images[split:]
+
+    for img in train_images:
+        shutil.copy(img, os.path.join(output_dir, 'train', cls))
+
+    for img in val_images:
+        shutil.copy(img, os.path.join(output_dir, 'val', cls))
+
+    print(cls, "Training:", len(train_images),
+          "Validation:", len(val_images))
+
+print("Dataset preparation completed!")
+
+# Load YOLO classification model
+model = YOLO("yolov8n-cls.pt")
+
+# Train model
+results = model.train(
+    data=output_dir,
+    epochs=5,
+    imgsz=128,
+    batch=32
+)
+
+# Load best trained model
+best_model = YOLO("runs/classify/train/weights/best.pt")
+
+# Test one flower image
+test_images = glob.glob(
+    os.path.join(output_dir, 'val', '*', '*')
+)
+
+img_path = random.choice(test_images)
+
+# Predict flower category
+result = best_model.predict(img_path, verbose=False)[0]
+
+predicted_class = result.names[result.probs.top1]
+confidence = float(result.probs.top1conf)
+
+# Display image and prediction
+plt.imshow(Image.open(img_path))
+plt.title(f"Prediction: {predicted_class}\nConfidence: {confidence:.2%}")
+plt.axis('off')
+plt.show()
+
+# Display training results
+results_img = "runs/classify/train/results.png"
+
+if os.path.exists(results_img):
+    display(Image.open(results_img))
+</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -533,7 +985,9 @@ git commit -m "Resolved merge conflict" </p>
   <!-- card 8 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Clone, Modify, Push </span>
+      <span class="question">Object Detection using YOLO
+Fruit image detection: https://www.kaggle.com/datasets/afsananadia/fruits-images-dataset-object-detection
+</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -541,12 +995,289 @@ git commit -m "Resolved merge conflict" </p>
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">git clone https://github.com/mahi131005/git-practice.git 
-cd devops-lab 
-echo "Cloned repo update" >> file2.txt 
-git add . 
-git commit -m "Update from clone" 
-git push 
+          <p class="code">
+https://www.kaggle.com/datasets/afsananadia/fruits-images-dataset-object-detection
+           
+# 1. Install and import libraries
+!pip install -q ultralytics pyyaml matplotlib pillow
+
+import os
+import zipfile
+import random
+import shutil
+import yaml
+import glob
+import matplotlib.pyplot as plt
+
+from PIL import Image
+from ultralytics import YOLO
+
+# 2. Upload ZIP file
+
+print("Upload your Fruit Dataset ZIP file")
+
+try:
+    # Google Colab
+    from google.colab import files
+    uploaded = files.upload()
+    zip_path = next(iter(uploaded))
+
+except ImportError:
+    # Jupyter Notebook
+    zip_path = input("Enter ZIP file path: ")
+
+# 3. Extract ZIP file
+
+extract_dir = "Fruit_Dataset"
+
+if os.path.exists(extract_dir):
+    shutil.rmtree(extract_dir)
+
+os.makedirs(extract_dir)
+
+with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    zip_ref.extractall(extract_dir)
+
+print("Dataset extracted successfully!")
+
+# 4. Define fruit classes
+
+classes = [
+    "Apple", "Banana", "Grapes", "Guava", "HogPlum",
+    "Jackfruit", "Litchi", "Mango", "Orange", "Papaya"
+]
+
+class_map = {name.lower(): i for i, name in enumerate(classes)}
+
+# 5. Find training and testing images
+
+extensions = (".jpg", ".jpeg", ".png")
+
+def find_images(folder_name):
+
+    images = []
+
+    for root, dirs, files_list in os.walk(extract_dir):
+
+        if folder_name.lower() in [x.lower() for x in root.split(os.sep)]:
+
+            for file in files_list:
+                if file.lower().endswith(extensions):
+                    images.append(os.path.join(root, file))
+
+    return images
+
+train_images = find_images("Train File")
+test_images = find_images("Test File")
+
+print("Training images:", len(train_images))
+print("Testing images:", len(test_images))
+
+if not train_images or not test_images:
+    raise ValueError("Training or testing images not found.")
+
+# 6. Create YOLO dataset folders
+
+output_dir = "Fruit_YOLO"
+
+if os.path.exists(output_dir):
+    shutil.rmtree(output_dir)
+
+for split in ["train", "val", "test"]:
+    os.makedirs(f"{output_dir}/images/{split}", exist_ok=True)
+    os.makedirs(f"{output_dir}/labels/{split}", exist_ok=True)
+
+# 7. Prepare images and annotations
+
+def prepare_data(image_list, split):
+
+    count = 0
+
+    for image_path in image_list:
+
+        filename = os.path.basename(image_path)
+        name = os.path.splitext(filename)[0]
+
+        # Get fruit name from image filename
+        fruit_name = name.rsplit("_", 1)[-1].lower()
+
+        if fruit_name not in class_map:
+            print("Unknown fruit:", filename)
+            continue
+
+        class_id = class_map[fruit_name]
+
+        # Find matching annotation, ignoring filename case
+        folder = os.path.dirname(image_path)
+        label_files = {
+            f.lower(): f for f in os.listdir(folder)
+            if f.lower().endswith(".txt")
+        }
+
+        label_name = (name + ".txt").lower()
+
+        if label_name not in label_files:
+            print("Annotation missing:", filename)
+            continue
+
+        label_path = os.path.join(folder, label_files[label_name])
+
+        # Read and update class ID
+        with open(label_path, "r") as f:
+            lines = f.readlines()
+
+        new_lines = []
+
+        for line in lines:
+            values = line.strip().split()
+
+            if len(values) >= 5:
+                values[0] = str(class_id)
+                new_lines.append(" ".join(values))
+
+        if not new_lines:
+            print("Empty annotation:", filename)
+            continue
+
+        # Copy image and annotation
+        shutil.copy2(
+            image_path,
+            f"{output_dir}/images/{split}/{filename}"
+        )
+
+        with open(f"{output_dir}/labels/{split}/{name}.txt", "w") as f:
+            f.write("\n".join(new_lines))
+
+        count += 1
+
+    return count
+
+# 8. Split training data into train and validation
+
+random.seed(42)
+random.shuffle(train_images)
+
+split_index = int(0.8 * len(train_images))
+
+training_set = train_images[:split_index]
+validation_set = train_images[split_index:]
+
+train_count = prepare_data(training_set, "train")
+val_count = prepare_data(validation_set, "val")
+test_count = prepare_data(test_images, "test")
+
+print("\nDataset preparation completed!")
+print("Training samples:", train_count)
+print("Validation samples:", val_count)
+print("Testing samples:", test_count)
+
+if train_count == 0 or val_count == 0 or test_count == 0:
+    raise ValueError("Dataset preparation failed. Check images and annotations.")
+
+# 9. Create data.yaml automatically
+
+data = {
+    "path": os.path.abspath(output_dir),
+    "train": "images/train",
+    "val": "images/val",
+    "test": "images/test",
+    "names": classes
+}
+
+yaml_path = "fruit_data.yaml"
+
+with open(yaml_path, "w") as f:
+    yaml.safe_dump(data, f, sort_keys=False)
+
+print("\ndata.yaml created successfully!")
+
+# 10. Load YOLOv8 model
+
+model = YOLO("yolov8n.pt")
+
+# 11. Train the model
+
+results = model.train(
+    data=yaml_path,
+    epochs=30,
+    imgsz=640,
+    batch=16,
+    plots=True
+)
+
+print("\nModel training completed!")
+
+# 12. Load best model
+
+best_path = os.path.join(
+    str(results.save_dir),
+    "weights",
+    "best.pt"
+)
+
+best_model = YOLO(best_path)
+
+# 13. Evaluate the model
+
+metrics = best_model.val(
+    data=yaml_path,
+    split="test"
+)
+
+print("\nModel Evaluation:")
+print("Precision:", metrics.box.mp)
+print("Recall:", metrics.box.mr)
+print("mAP50:", metrics.box.map50)
+print("mAP50-95:", metrics.box.map)
+
+# 14. Display training results
+
+result_file = os.path.join(
+    str(results.save_dir),
+    "results.png"
+)
+
+if os.path.exists(result_file):
+    plt.figure(figsize=(12, 6))
+    plt.imshow(Image.open(result_file))
+    plt.title("YOLOv8 Training Results")
+    plt.axis("off")
+    plt.show()
+
+# 15. Test fruit detection
+
+test_images = glob.glob(f"{output_dir}/images/test/*")
+
+sample_image = random.choice(test_images)
+
+prediction = best_model.predict(
+    source=sample_image,
+    conf=0.25,
+    verbose=False
+)
+
+# Display detected fruit with bounding boxes
+plt.figure(figsize=(8, 6))
+plt.imshow(prediction[0].plot()[:, :, ::-1])
+plt.title("Fruit Detection using YOLOv8")
+plt.axis("off")
+plt.show()
+
+# Display detected fruit names and confidence
+print("\nDetected Fruits:")
+
+for box in prediction[0].boxes:
+    class_id = int(box.cls[0])
+    confidence = float(box.conf[0])
+
+    print(
+        classes[class_id],
+        "- Confidence:",
+        round(confidence * 100, 2), "%"
+    )
+
+print("\nFruit Object Detection Completed!")
+
         </p>
         </div>
         <button class="copy-btn">
@@ -561,7 +1292,10 @@ git push
   <!-- card 9 -->
     <div class="card">
     <div class="card-header">
-      <span class="question">Branch strategies </span>
+      <span class="question">Object Detection using YOLO
+Fruits and vegetables:
+https://www.kaggle.com/datasets/kritikseth/fruit-and-vegetable-image-recognition
+</span>
       <span class="arrow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
@@ -569,14 +1303,766 @@ git push
     <div class="card-body">
       <div class="code-wrapper">
         <div class="code-block">
-          <p class="code">git checkout -b dev 
-git checkout -b testing 
-git checkout dev 
-echo "Dev work" > dev.txt 
-git add . 
-git commit -m "Dev changes" 
-git checkout main 
-git merge dev --no-ff</p>
+          <p class="code">
+https://www.kaggle.com/datasets/kritikseth/fruit-and-vegetable-image-recognition
+
+# 1. Install and import libraries
+
+!pip install -q ultralytics matplotlib pillow
+
+import os
+import glob
+import random
+import matplotlib.pyplot as plt
+
+from PIL import Image
+from ultralytics import YOLO
+
+
+# ============================================================
+# 2. LOAD DATASET
+# ============================================================
+
+# KAGGLE:
+# Add the dataset using the "Add Input" option.
+# Find the exact dataset path from /kaggle/input.
+
+DATASET_PATH = "/kaggle/input/datasets/kritikseth/fruit-and-vegetable-image-recognition"
+
+# GOOGLE COLAB:
+# from google.colab import files
+# import zipfile
+#
+# uploaded = files.upload()
+# zip_path = next(iter(uploaded))
+#
+# with zipfile.ZipFile(zip_path, "r") as zip_ref:
+#     zip_ref.extractall("Fruit_Vegetable_Dataset")
+#
+# DATASET_PATH = "Fruit_Vegetable_Dataset"
+
+# JUPYTER NOTEBOOK:
+# import zipfile
+# zip_path = input("Enter ZIP file path: ").strip().strip('"')
+#
+# with zipfile.ZipFile(zip_path, "r") as zip_ref:
+#     zip_ref.extractall("Fruit_Vegetable_Dataset")
+#
+# DATASET_PATH = "Fruit_Vegetable_Dataset"
+
+
+# ============================================================
+# 3. DISPLAY SAMPLE DATASET IMAGES
+# ============================================================
+
+TRAIN_PATH = os.path.join(DATASET_PATH, "train")
+
+classes = sorted(os.listdir(TRAIN_PATH))
+
+print("Number of Classes:", len(classes))
+print("Classes:", classes)
+
+plt.figure(figsize=(12, 8))
+
+for i, category in enumerate(classes[:9]):
+
+    images = glob.glob(
+        os.path.join(TRAIN_PATH, category, "*")
+    )
+
+    if images:
+        img = Image.open(random.choice(images))
+
+        plt.subplot(3, 3, i + 1)
+        plt.imshow(img)
+        plt.title(category)
+        plt.axis("off")
+
+plt.tight_layout()
+plt.show()
+
+
+# ============================================================
+# 4. LOAD YOLOv8 CLASSIFICATION MODEL
+# ============================================================
+
+model = YOLO("yolov8n-cls.pt")
+
+print("YOLOv8 Model Loaded Successfully!")
+
+
+# ============================================================
+# 5. TRAIN THE MODEL
+# ============================================================
+
+results = model.train(
+    data=DATASET_PATH,
+    epochs=15,
+    imgsz=224,
+    batch=32,
+    device=0,
+    project="/kaggle/working",
+    name="fruit_vegetable_yolo",
+    exist_ok=True
+)
+
+print("Model Training Completed!")
+
+
+# ============================================================
+# 6. LOAD BEST TRAINED MODEL
+# ============================================================
+
+best_path = os.path.join(
+    str(results.save_dir),
+    "weights",
+    "best.pt"
+)
+
+best_model = YOLO(best_path)
+
+
+# ============================================================
+# 7. EVALUATE MODEL
+# ============================================================
+
+metrics = best_model.val(
+    data=DATASET_PATH,
+    split="test"
+)
+
+print("\nModel Evaluation:")
+print("Top-1 Accuracy:", round(metrics.top1 * 100, 2), "%")
+print("Top-5 Accuracy:", round(metrics.top5 * 100, 2), "%")
+
+
+# ============================================================
+# 8. TEST ON ONE FRUIT AND ONE VEGETABLE IMAGE
+# ============================================================
+
+TEST_PATH = os.path.join(DATASET_PATH, "test")
+
+# Select one fruit image
+fruit_classes = [
+    c for c in classes
+    if any(x in c.lower() for x in
+           ["apple", "banana", "orange", "mango", "grape",
+            "watermelon", "papaya", "pineapple", "kiwi"])
+]
+
+# Select one vegetable image
+vegetable_classes = [
+    c for c in classes
+    if any(x in c.lower() for x in
+           ["carrot", "potato", "tomato", "onion", "cabbage",
+            "broccoli", "cucumber", "capsicum", "cauliflower"])
+]
+
+
+# Get one image from each category
+
+fruit_image = random.choice(
+    glob.glob(os.path.join(TEST_PATH, random.choice(fruit_classes), "*"))
+)
+
+vegetable_image = random.choice(
+    glob.glob(os.path.join(TEST_PATH, random.choice(vegetable_classes), "*"))
+)
+
+
+# Predict both images
+
+for image_path in [fruit_image, vegetable_image]:
+
+    result = best_model.predict(
+        source=image_path,
+        verbose=False
+    )[0]
+
+    predicted_class = best_model.names[result.probs.top1]
+
+    confidence = float(result.probs.top1conf) * 100
+
+    plt.figure(figsize=(5, 5))
+    plt.imshow(Image.open(image_path))
+    plt.axis("off")
+    plt.title(
+        f"Predicted: {predicted_class}\n"
+        f"Confidence: {confidence:.2f}%"
+    )
+    plt.show()
+
+    print("Actual Class:", os.path.basename(
+        os.path.dirname(image_path)
+    ))
+
+    print("Predicted Class:", predicted_class)
+    print("Confidence:", round(confidence, 2), "%")
+    print("----------------------------------")
+
+
+print("\nFruits and Vegetables Classification Completed!")
+</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+ <!-- card 10 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Music Genre Classification using RNN [Dataset: GTZAN Music Genre Dataset.] </span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">
+
+https://www.kaggle.com/datasets/andradaolteanu/gtzan-dataset-music-genre-classification
+           
+           # 1. Install required libraries
+
+!pip install -q librosa tensorflow scikit-learn matplotlib
+
+
+# ============================================================
+# MUSIC GENRE CLASSIFICATION USING RNN
+# Dataset: GTZAN Music Genre Dataset
+# Compatible with Kaggle, Google Colab and Jupyter Notebook
+# ============================================================
+
+# 2. Import libraries
+
+import os
+import glob
+import zipfile
+import numpy as np
+import librosa
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, Dense, Dropout
+from tensorflow.keras.utils import to_categorical
+
+# 3. Locate dataset
+
+# -------- KAGGLE NOTEBOOK --------
+# Add the GTZAN dataset using Add Input.
+# Kaggle datasets are available inside /kaggle/input/.
+
+dataset_dir = "/kaggle/input"
+
+# Automatically find genres_original folder
+genre_folder = None
+
+genres = [
+    "blues", "classical", "country", "disco", "hiphop",
+    "jazz", "metal", "pop", "reggae", "rock"
+]
+
+for root, dirs, files in os.walk(dataset_dir):
+
+    if all(g in [d.lower() for d in dirs] for g in genres):
+        genre_folder = root
+        break
+
+# -------- GOOGLE COLAB NOTEBOOK --------
+# Uncomment the following code when using Google Colab.
+#
+# from google.colab import files
+# uploaded = files.upload()
+# zip_path = next(iter(uploaded))
+#
+# extract_dir = "/content/GTZAN"
+# os.makedirs(extract_dir, exist_ok=True)
+#
+# with zipfile.ZipFile(zip_path, "r") as z:
+#     z.extractall(extract_dir)
+#
+# dataset_dir = extract_dir
+#
+# Search for genre folders after extraction:
+# genre_folder = None
+# for root, dirs, files in os.walk(dataset_dir):
+#     if all(g in [d.lower() for d in dirs] for g in genres):
+#         genre_folder = root
+#         break
+
+# -------- JUPYTER NOTEBOOK --------
+# Uncomment and enter your local dataset folder path.
+#
+# dataset_dir = r"C:\Users\YourName\Downloads\GTZAN"
+# genre_folder = os.path.join(dataset_dir, "genres_original")
+
+if genre_folder is None:
+    raise FileNotFoundError(
+        "GTZAN genre folders not found. "
+        "Check the dataset path and folder structure."
+    )
+
+print("Dataset found at:", genre_folder)
+
+# 4. Extract MFCC features from audio files
+
+features = []
+labels = []
+
+for genre in genres:
+
+    folder = os.path.join(genre_folder, genre)
+
+    audio_files = glob.glob(os.path.join(folder, "*.wav"))
+
+    print("Processing", genre, ":", len(audio_files), "files")
+
+    for file in audio_files:
+
+        try:
+            # Load audio
+            audio, sr = librosa.load(
+                file,
+                sr=22050,
+                duration=30
+            )
+
+            # Extract MFCC features
+            mfcc = librosa.feature.mfcc(
+                y=audio,
+                sr=sr,
+                n_mfcc=13,
+                n_fft=2048,
+                hop_length=1024
+            )
+
+            # Normalize features
+            mfcc = (mfcc - np.mean(mfcc, axis=1, keepdims=True)) / (
+                np.std(mfcc, axis=1, keepdims=True) + 1e-8
+            )
+
+            # Convert to (time steps, features)
+            mfcc = mfcc.T
+
+            # Keep fixed sequence length
+            max_len = 650
+
+            if mfcc.shape[0] < max_len:
+                padding = max_len - mfcc.shape[0]
+                mfcc = np.pad(
+                    mfcc,
+                    ((0, padding), (0, 0))
+                )
+            else:
+                mfcc = mfcc[:max_len, :]
+
+            features.append(mfcc)
+            labels.append(genre)
+
+        except Exception as e:
+            print("Skipping file:", os.path.basename(file), "-", e)
+
+# Convert to NumPy arrays
+X = np.array(features)
+y = np.array(labels)
+
+print("\nFeature shape:", X.shape)
+print("Number of samples:", len(y))
+
+if len(X) == 0:
+    raise ValueError("No audio files were processed.")
+
+# 5. Encode genre labels
+
+encoder = LabelEncoder()
+
+y = encoder.fit_transform(y)
+y = to_categorical(y, num_classes=len(genres))
+
+# 6. Split dataset into training and testing sets
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=np.argmax(y, axis=1)
+)
+
+print("\nTraining samples:", len(X_train))
+print("Testing samples:", len(X_test))
+
+# 7. Build RNN model
+
+model = Sequential([
+    SimpleRNN(64, input_shape=(650, 13)),
+    Dropout(0.3),
+    Dense(32, activation="relu"),
+    Dense(len(genres), activation="softmax")
+])
+
+# 8. Compile model
+
+model.compile(
+    optimizer="adam",
+    loss="categorical_crossentropy",
+    metrics=["accuracy"]
+)
+
+model.summary()
+
+# 9. Train model
+
+history = model.fit(
+    X_train,
+    y_train,
+    epochs=20,
+    batch_size=32,
+    validation_split=0.2,
+    verbose=1
+)
+
+print("\nModel training completed!")
+
+# 10. Evaluate model
+
+loss, accuracy = model.evaluate(X_test, y_test)
+
+print("\nTest Accuracy:", round(accuracy * 100, 2), "%")
+print("Test Loss:", round(loss, 4))
+
+# 11. Display accuracy graph
+
+plt.figure(figsize=(10, 4))
+
+plt.plot(history.history["accuracy"], label="Training Accuracy")
+plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
+
+plt.title("RNN Model Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+
+# 12. Display loss graph
+
+plt.figure(figsize=(10, 4))
+
+plt.plot(history.history["loss"], label="Training Loss")
+plt.plot(history.history["val_loss"], label="Validation Loss")
+
+plt.title("RNN Model Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+
+# 13. Predict genre of a sample audio file
+
+sample_index = 0
+
+sample = X_test[sample_index]
+actual = np.argmax(y_test[sample_index])
+
+prediction = model.predict(
+    np.expand_dims(sample, axis=0),
+    verbose=0
+)
+
+predicted = np.argmax(prediction)
+
+print("\nMusic Genre Prediction:")
+print("Actual Genre:", encoder.classes_[actual])
+print("Predicted Genre:", encoder.classes_[predicted])
+print(
+    "Confidence:",
+    round(float(np.max(prediction)) * 100, 2),
+    "%"
+)
+
+print("\nMusic Genre Classification Completed!")
+</p>
+        </div>
+        <button class="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+ <!-- card 11 -->
+    <div class="card">
+    <div class="card-header">
+      <span class="question">Music Genre Classification using LSTM [Dataset: GTZAN Music Genre Dataset.] </span>
+      <span class="arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="code-wrapper">
+        <div class="code-block">
+          <p class="code">
+https://www.kaggle.com/datasets/andradaolteanu/gtzan-dataset-music-genre-classification
+
+# 1. Install required libraries
+
+!pip install -q librosa tensorflow scikit-learn matplotlib
+
+# 2. Import libraries
+
+import os
+import glob
+import zipfile
+import numpy as np
+import librosa
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.utils import to_categorical
+
+# 3. Define music genres
+
+genres = [
+    "blues", "classical", "country", "disco", "hiphop",
+    "jazz", "metal", "pop", "reggae", "rock"
+]
+
+# 4. Locate the dataset
+
+# -------- KAGGLE NOTEBOOK --------
+# Add the GTZAN dataset using Add Input.
+# Dataset will be available inside /kaggle/input/.
+
+dataset_dir = "/kaggle/input"
+
+# -------- GOOGLE COLAB NOTEBOOK --------
+# Uncomment these lines when using Google Colab.
+#
+# from google.colab import files
+# uploaded = files.upload()
+# zip_path = next(iter(uploaded))
+#
+# extract_dir = "/content/GTZAN"
+# os.makedirs(extract_dir, exist_ok=True)
+#
+# with zipfile.ZipFile(zip_path, "r") as z:
+#     z.extractall(extract_dir)
+#
+# dataset_dir = extract_dir
+
+# -------- JUPYTER NOTEBOOK --------
+# Uncomment and provide your local dataset folder path.
+#
+# dataset_dir = r"C:\Users\YourName\Downloads\GTZAN"
+
+# Automatically locate the genre folders
+
+genre_folder = None
+
+for root, dirs, files in os.walk(dataset_dir):
+
+    if all(g in [d.lower() for d in dirs] for g in genres):
+        genre_folder = root
+        break
+
+if genre_folder is None:
+    raise FileNotFoundError(
+        "GTZAN genre folders not found. Check the dataset path."
+    )
+
+print("Dataset found:", genre_folder)
+
+# 5. Extract MFCC features
+
+features = []
+labels = []
+
+for genre in genres:
+
+    folder = os.path.join(genre_folder, genre)
+
+    audio_files = glob.glob(os.path.join(folder, "*.wav"))
+
+    print("Processing", genre, ":", len(audio_files), "files")
+
+    for file in audio_files:
+
+        try:
+            # Load audio file
+            audio, sr = librosa.load(
+                file,
+                sr=22050,
+                duration=30
+            )
+
+            # Extract MFCC features
+            mfcc = librosa.feature.mfcc(
+                y=audio,
+                sr=sr,
+                n_mfcc=13
+            )
+
+            # Normalize features
+            mfcc = (mfcc - np.mean(mfcc, axis=1, keepdims=True)) / (
+                np.std(mfcc, axis=1, keepdims=True) + 1e-8
+            )
+
+            # Convert to time steps
+            mfcc = mfcc.T
+
+            # Make all sequences the same length
+            max_len = 650
+
+            if mfcc.shape[0] < max_len:
+                mfcc = np.pad(
+                    mfcc,
+                    ((0, max_len - mfcc.shape[0]), (0, 0))
+                )
+            else:
+                mfcc = mfcc[:max_len, :]
+
+            features.append(mfcc)
+            labels.append(genre)
+
+        except Exception as e:
+            print("Skipping:", os.path.basename(file), e)
+
+# Convert into NumPy arrays
+X = np.array(features)
+y = np.array(labels)
+
+print("\nFeature shape:", X.shape)
+print("Total audio files:", len(X))
+
+if len(X) == 0:
+    raise ValueError("No audio files were processed.")
+
+# 6. Encode genre labels
+
+encoder = LabelEncoder()
+
+y = encoder.fit_transform(y)
+y = to_categorical(y, num_classes=len(genres))
+
+# 7. Split dataset into training and testing sets
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=np.argmax(y, axis=1)
+)
+
+print("\nTraining samples:", len(X_train))
+print("Testing samples:", len(X_test))
+
+# 8. Build LSTM model
+
+model = Sequential([
+    LSTM(64, input_shape=(650, 13)),
+    Dropout(0.3),
+    Dense(32, activation="relu"),
+    Dense(len(genres), activation="softmax")
+])
+
+# 9. Compile model
+
+model.compile(
+    optimizer="adam",
+    loss="categorical_crossentropy",
+    metrics=["accuracy"]
+)
+
+model.summary()
+
+# 10. Train the model
+
+history = model.fit(
+    X_train,
+    y_train,
+    epochs=20,
+    batch_size=32,
+    validation_split=0.2,
+    verbose=1
+)
+
+print("\nModel training completed!")
+
+# 11. Evaluate the model
+
+loss, accuracy = model.evaluate(X_test, y_test)
+
+print("\nTest Accuracy:", round(accuracy * 100, 2), "%")
+print("Test Loss:", round(loss, 4))
+
+# 12. Display accuracy graph
+
+plt.figure(figsize=(8, 4))
+
+plt.plot(history.history["accuracy"], label="Training Accuracy")
+plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
+
+plt.title("LSTM Model Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+
+# 13. Display loss graph
+
+plt.figure(figsize=(8, 4))
+
+plt.plot(history.history["loss"], label="Training Loss")
+plt.plot(history.history["val_loss"], label="Validation Loss")
+
+plt.title("LSTM Model Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+
+# 14. Predict music genre for a sample
+
+sample_index = 0
+
+sample = X_test[sample_index]
+actual = np.argmax(y_test[sample_index])
+
+prediction = model.predict(
+    np.expand_dims(sample, axis=0),
+    verbose=0
+)
+
+predicted = np.argmax(prediction)
+
+print("\nMusic Genre Prediction:")
+print("Actual Genre:", encoder.classes_[actual])
+print("Predicted Genre:", encoder.classes_[predicted])
+
+print(
+    "Confidence:",
+    round(float(np.max(prediction)) * 100, 2),
+    "%"
+)
+
+print("\nMusic Genre Classification using LSTM Completed!")
+</p>
         </div>
         <button class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
